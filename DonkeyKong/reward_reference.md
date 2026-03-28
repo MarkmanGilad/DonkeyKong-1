@@ -13,7 +13,9 @@ All rewards are calculated in `environment.step()` after the action is executed.
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
 | Moved closer to ladder | +0.3 | `REWARD_TOWARD_LADDER` |
-| Moved away from ladder | −0.3 | `REWARD_AWAY_LADDER` (0.3, applied via `reward -=`) |
+| Moved away from ladder | −0.4 | `REWARD_AWAY_LADDER` (0.4, applied via `reward -=`) |
+
+**Note:** Asymmetric to prevent oscillation farming. One toward+away cycle = +0.3 − 0.4 = −0.1 net.
 
 ### C. Distance to Princess (only on same platform)
 | Condition | Reward | Config Constant |
@@ -25,13 +27,13 @@ All rewards are calculated in `environment.step()` after the action is executed.
 |-----------|--------|-----------------|
 | Jump when barrel > 100 px away | −1.0 | `REWARD_JUMP_IRRELEVANT` (1.0, applied via `reward -=`) |
 | Jump when barrel 50–100 px away | −0.5 | `REWARD_JUMP_DISTANT` (0.5, applied via `reward -=`) |
-| Jump when barrel ≤ 50 px away | +0.5 | `REWARD_JUMP_CLOSE` |
-| No threatening barrel (`barrel_dx == 0`) | — | Skipped entirely |
+| Jump when barrel ≤ 50 px away | +5.0 | `REWARD_JUMP_CLOSE` |
+| Jump with no threatening barrel (`barrel_dx == 0`) | −1.0 | `REWARD_JUMP_IRRELEVANT` |
 
 ### D2. No-Jump Penalty (per frame, barrel close)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| On ground, not jumping/airborne, not on ladder, barrel ≤ 50 px | −0.5 per frame | `REWARD_NO_JUMP_PENALTY` |
+| On ground, not jumping/airborne, not on ladder, barrel ≤ 50 px | −2.0 per frame | `REWARD_NO_JUMP_PENALTY` |
 
 Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD = 100`
 
@@ -47,7 +49,7 @@ Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD =
 |-----------|--------|-----------------|
 | Lost a life (or game over) | −10.0 | `REWARD_DEATH` |
 
-**Note:** `INITIAL_LIVES = 1` — any death ends the episode immediately. No respawn.
+**Note:** `INITIAL_LIVES = 1` for fall-off-platform (instant game over). Barrel hits use `MAX_BARREL_HITS = 10` — player continues from same position, gets `REWARD_DEATH` per hit, and `−10 score` (`BARREL_HIT_SCORE_PENALTY`). Game over after 10 barrel hits.
 | Score increased (reached princess) | +50.0 | `REWARD_WIN` |
 
 ### G. Living Penalty (per step)
@@ -58,8 +60,10 @@ Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD =
 ### H. Ladder Interaction
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
-| Grabbed a ladder (was off, now on) | +1.0 | `REWARD_GRAB_LADDER` |
-| Exited a ladder (was on, now off) | +4.0 | `REWARD_EXIT_LADDER` |
+| Grabbed a ladder (not re-grabbing the same one just exited) | +1.0 | `REWARD_GRAB_LADDER` |
+| Exited a ladder AND reached a higher platform | +4.0 | `REWARD_EXIT_LADDER` |
+
+**Note:** Tracks `_last_exited_ladder` to prevent grab/exit oscillation farming.
 
 ### I. Hang Penalty (scaled)
 | Condition | Reward | Config Constant |

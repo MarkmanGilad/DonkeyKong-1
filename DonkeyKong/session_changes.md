@@ -125,6 +125,59 @@
 - **Problem:** wandb config only logged 4 parameters (learning_rate, gamma, batch_size, epsilon_decay_steps). Most hyperparameters were untracked.
 - **Fix:** Now logs all key parameters: network architecture, training hyperparameters, exploration schedule, physics constants, all reward values/thresholds, and game settings. Makes every run fully reproducible from the wandb dashboard.
 
+### 24. Fixed Ladder Grab/Exit Reward Farming Exploit
+- **File:** `environment.py`
+- **Problem:** Agent oscillated at ladder top: exit ladder (+4.0) → step back, grab ladder (+1.0) → repeat = +2.5/frame average. This was 8× more rewarding than walking toward the next ladder (+0.3/frame).
+- **Fix (EXIT_LADDER):** Now only fires when `current_platform_number > prev_platform` — player must actually reach a higher platform.
+- **Fix (GRAB_LADDER):** Tracks `_last_exited_ladder` and won't reward re-grabbing the same ladder just exited.
+
+### 25. Fixed Zero-Gravity Ladder Float Exploit
+- **File:** `environment.py`
+- **Problem:** When `on_ladder=True`, no gravity applied. If the agent pressed action 3 (climb up) past the ladder top, the condition `if not ladder_under_center and action != 3 and action != 4` kept them in ladder mode. The agent floated upward in zero gravity, skipping platforms.
+- **Fix:** Removed the `action != 3 and action != 4` condition. Player now detaches from ladder as soon as `ladder_under_center` is `None`, regardless of action.
+
+### 26. Asymmetric Ladder Distance Rewards
+- **File:** `config.py`
+- **Problem:** Toward ladder (+0.3) and away from ladder (−0.3) were symmetric. Oscillating left-right near a ladder netted 0, while avoiding the idle penalty — making oscillation free.
+- **Fix:** `REWARD_AWAY_LADDER` increased to 0.4. One oscillation cycle now costs −0.1 net.
+
+### 27. Barrel Jump Rewards Increased
+- **File:** `config.py`
+- **Problem:** `REWARD_JUMP_CLOSE = 0.5` and `REWARD_NO_JUMP_PENALTY = 0.5/frame` were negligible compared to death (−10). Agent had no incentive to learn jumping.
+- **Fix:** `REWARD_JUMP_CLOSE`: 0.5 → **5.0** (half of death penalty). `REWARD_NO_JUMP_PENALTY`: 0.5 → **2.0/frame** (over ~25 frames = −50, 5× worse than death). Not jumping when a barrel is close is now treated as catastrophic.
+
+### 28. Penalty for Jumping With No Barrel
+- **File:** `environment.py`
+- **Problem:** When `barrel_dx == 0` (no threatening barrel), jump reward was skipped entirely — jumping was free. Agent learned to jump constantly.
+- **Fix:** Jumping with no barrel now gets `−1.0` (`REWARD_JUMP_IRRELEVANT`), same as jumping when a barrel is far away.
+
+### 29. Barrel Hit Lives System (10 Hits Before Death)
+- **Files:** `config.py`, `environment.py`
+- **Problem:** With `INITIAL_LIVES = 1`, every barrel hit ended the episode instantly. Agent had very few opportunities to learn jumping.
+- **Fix:** Added `MAX_BARREL_HITS = 10`. Barrel collision increments `barrel_hits` counter; `game_over` only when hits reach 10. Player continues from the same position after each hit. `REWARD_DEATH` still applied on every hit for reward shaping. Fall-off-platform death remains instant.
+
+### 30. Score Penalty for Barrel Hits
+- **Files:** `config.py`, `environment.py`
+- **Problem:** Score didn't reflect barrel avoidance skill — an agent that dodges barrels scored the same as one that gets hit.
+- **Fix:** Added `BARREL_HIT_SCORE_PENALTY = 10`. Each barrel hit subtracts 10 from score, making score a better measure of barrel avoidance.
+
+### 31. Moved Donkey Kong to Right Side of Top Platform
+- **File:** `environment.py`
+- **Change:** Kong position moved from x=500 to x=920 (right side of top platform, which spans x=400–1000).
+
+### 32. Fixed Barrel Direction on Flat Platforms
+- **File:** `environment.py`
+- **Problem:** After moving Kong to x=920, barrels spawned right of the platform center, causing them to roll right on the flat top platform instead of left.
+- **Fix:** On flat platforms (angle=0), barrels now preserve their current horizontal direction instead of rolling toward the nearest edge. Kong throws left, so barrels continue left.
+
+### 33. HUD: Remaining Barrel Hits
+- **File:** `environment.py`
+- **Change:** Added "Hits left: X" text in white at the top-left corner of the screen showing `MAX_BARREL_HITS - barrel_hits`.
+
+### 34. Increased MAX_STEPS_PER_EPISODE
+- **File:** `config.py`
+- **Change:** `MAX_STEPS_PER_EPISODE`: 5000 → **50000**. Gives the agent much more time per episode to explore and learn.
+
 ## Documentation Created
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.
 - `reward_reference.md` — Complete reward breakdown with config values and flow.

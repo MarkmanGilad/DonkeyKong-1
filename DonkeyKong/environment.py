@@ -23,6 +23,7 @@ class Environment:
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
+        self.barrel_hits = 0
         
         # Gravity and physics constants
         self.gravity = config.GRAVITY
@@ -84,8 +85,8 @@ class Environment:
             self.all_sprites.add(ladder)
     
     def _create_donkey_kong(self):
-        # Create Donkey Kong at the top
-        self.donkey_kong = DonkeyKong(500, self.screen_height - 780)
+        # Create Donkey Kong at the right side of the top platform
+        self.donkey_kong = DonkeyKong(920, self.screen_height - 780)
         self.all_sprites.add(self.donkey_kong)
     
     def _create_princess(self):
@@ -186,8 +187,12 @@ class Environment:
                         if plat_angle:
                             barrel.change_x = speed if plat_angle > 0 else -speed
                         else:
-                            plat_center = (platform.rect.left + platform.rect.right) / 2
-                            barrel.change_x = -speed if barrel.rect.centerx < plat_center else speed
+                            # Flat platform: keep current direction
+                            if barrel.change_x != 0:
+                                barrel.change_x = speed if barrel.change_x > 0 else -speed
+                            else:
+                                plat_center = (platform.rect.left + platform.rect.right) / 2
+                                barrel.change_x = -speed if barrel.rect.centerx < plat_center else speed
 
                         break
 
@@ -266,8 +271,10 @@ class Environment:
 
             # Barrel collision
             if pygame.sprite.spritecollide(self.player, self.barrels, True):
-                self.lives -= 1
-                self.game_over = True
+                self.barrel_hits += 1
+                self.score -= config.BARREL_HIT_SCORE_PENALTY
+                if self.barrel_hits >= config.MAX_BARREL_HITS:
+                    self.game_over = True
 
             # Princess collision (win condition)
             if pygame.sprite.collide_rect(self.player, self.princess):
@@ -510,8 +517,10 @@ class Environment:
         prev_state_dict = self.get_state()
         prev_y = self.player.rect.y
         prev_lives = self.lives
+        prev_barrel_hits = self.barrel_hits
         prev_score = self.score
         prev_on_ladder = self.player.on_ladder
+        prev_platform = self.player.current_platform_number
 
         # Track platform progress
         current_plat = self.player.current_platform_number
@@ -569,7 +578,7 @@ class Environment:
             elif action == 1 or action == 6: self.player.move_right()
             else: self.player.stop_horizontal()
             
-            if not ladder_under_center and action != 3 and action != 4:
+            if not ladder_under_center:
                 self.player.on_ladder = False
                 self.player.change_y = 0
 
@@ -653,6 +662,8 @@ class Environment:
                 reward -= config.REWARD_JUMP_DISTANT
             else:
                 reward += config.REWARD_JUMP_CLOSE
+        elif jump_happened and prev_state_dict['barrel_dx'] == 0:
+            reward -= config.REWARD_JUMP_IRRELEVANT
 
         # D2. Penalty for not jumping when barrel is very close
         if not jump_happened and next_state_dict['in_air'] == 0 and not self.player.on_ladder:
@@ -664,7 +675,7 @@ class Environment:
             reward += config.REWARD_IDLE
 
         # F. Survival / Winning / Losing
-        if self.lives < prev_lives or (self.game_over and self.lives == 0):
+        if self.barrel_hits > prev_barrel_hits or self.lives < prev_lives:
             reward = config.REWARD_DEATH
 
         if self.score > prev_score:
@@ -673,14 +684,19 @@ class Environment:
         # G. Living penalty (encourage speed)
         reward += config.REWARD_ALIVE
 
-        # H. Reward for grabbing a ladder (encourages ladder use)
+        # H. Reward for grabbing a ladder (only if not re-grabbing the same one)
         if self.player.on_ladder and not prev_on_ladder:
-            reward += config.REWARD_GRAB_LADDER
+            current_ladder = self.get_ladder_under_center()
+            last_ladder = getattr(self.player, '_last_exited_ladder', None)
+            if current_ladder is not last_ladder:
+                reward += config.REWARD_GRAB_LADDER
 
-        # G. Reward for reaching platform via ladder (successful climb)
+        # I. Reward for reaching a HIGHER platform via ladder (not just exiting)
         if not self.player.on_ladder and prev_on_ladder:
-            # Successfully exited ladder, likely reached a platform
-            reward += config.REWARD_EXIT_LADDER
+            if self.player.current_platform_number > prev_platform:
+                reward += config.REWARD_EXIT_LADDER
+            # Track which ladder was exited to prevent re-grab farming
+            self.player._last_exited_ladder = self.get_ladder_under_center()
 
         # H. Scaled penalty for prolonged hanging (starts after threshold, not abrupt)
         hold_cnt = getattr(self.player, 'ladder_hold_counter', 0)
@@ -735,6 +751,12 @@ class Environment:
             screen.blit(self.player.image, self.player.rect)
         screen.blit(self.donkey_kong.image, self.donkey_kong.rect)
         screen.blit(self.princess.image, self.princess.rect)
+
+        # HUD: remaining barrel hits
+        font = pygame.font.SysFont(None, 30)
+        hits_left = config.MAX_BARREL_HITS - self.barrel_hits
+        hud_text = font.render(f"Hits left: {hits_left}", True, (255, 255, 255))
+        screen.blit(hud_text, (10, 10))
 
     def close(self):
         """Clean up pygame resources"""
