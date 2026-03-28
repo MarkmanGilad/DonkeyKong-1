@@ -41,6 +41,8 @@ Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD =
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
 | Lost a life (or game over) | −10.0 | `REWARD_DEATH` |
+
+**Note:** `INITIAL_LIVES = 1` — any death ends the episode immediately. No respawn.
 | Score increased (reached princess) | +50.0 | `REWARD_WIN` |
 
 ### G. Living Penalty (per step)

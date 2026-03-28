@@ -104,6 +104,17 @@
 - **Fix (not on ladder):** Only barrels on the **same platform** as the player AND facing the player are considered.
 - **Fix (on ladder):** Only barrels on the **platform above** (the one being climbed to) AND heading toward the **ladder top** are considered. Uses `get_ladder_under_center()` to find the ladder's x position.
 
+### 20. Single Life — Death Ends Episode
+- **File:** `config.py`, `environment.py`
+- **Problem:** With 3 lives, the agent respawned after dying and kept accumulating reward. Death penalty (−10) was negligible vs ~2800 total reward, so the agent had no incentive to dodge barrels.
+- **Fix:** `INITIAL_LIVES = 1`. Any death (barrel collision or fall-off) immediately sets `game_over = True`. Removed respawn logic from death handlers.
+- **Impact:** Death penalty now terminates the episode, making barrel avoidance critical for earning further rewards.
+
+### 21. Epsilon Decay Steps Increased
+- **File:** `config.py`
+- **Problem:** `EPSILON_DECAY_STEPS = 10000` caused epsilon to hit minimum after ~4 episodes (~2500 steps each).
+- **Fix:** Increased to `100000` — epsilon decays linearly over ~40 episodes.
+
 ## Documentation Created
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.
 - `reward_reference.md` — Complete reward breakdown with config values and flow.

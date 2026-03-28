@@ -262,25 +262,12 @@ class Environment:
             if ground_platform and self.player.rect.bottom >= ground_platform.rect.top - 5:
                 if self.player.rect.right < ground_platform.rect.left:
                     self.lives -= 1
-                    self.player.rect.x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
-                    self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
-                    self.player.on_ladder = False
-                    self.player.change_y = 0
-                    self.player.is_jumping = False
-                    if self.lives <= 0:
-                        self.game_over = True
+                    self.game_over = True
 
             # Barrel collision
             if pygame.sprite.spritecollide(self.player, self.barrels, True):
                 self.lives -= 1
-                self.player.rect.x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
-                self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
-                self.player.on_ladder = False
-                self.player.change_y = 0
-                self.player.is_jumping = False
-
-                if self.lives <= 0:
-                    self.game_over = True
+                self.game_over = True
 
             # Princess collision (win condition)
             if pygame.sprite.collide_rect(self.player, self.princess):
