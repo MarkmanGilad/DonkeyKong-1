@@ -1,5 +1,6 @@
 # princess.py - Princess character (goal of the game)
 import pygame
+import os
 
 class Princess(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -12,7 +13,7 @@ class Princess(pygame.sprite.Sprite):
         # Try to load princess image, use default rectangle if not found
         try:
             # Load image if available
-            image_path = "D:\\2DonkeyKong\\DonkeyKong\\images\\princess.png"
+            image_path = os.path.join(os.path.dirname(__file__), "images", "princess.png")
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.width, self.height))
         except (pygame.error, FileNotFoundError):

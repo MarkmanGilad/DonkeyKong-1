@@ -1,5 +1,6 @@
 # platform_class.py - Platform objects for the game
 import pygame
+import os
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, width, height, x, y):
@@ -8,7 +9,7 @@ class Platform(pygame.sprite.Sprite):
         # Try to load platform image, use default rectangle if not found
         try:
             # Load image if available
-            image_path = "D:\\2DonkeyKong\\DonkeyKong\\images\\platform.png"
+            image_path = os.path.join(os.path.dirname(__file__), "images", "platform.png")
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (width, height))
         except (pygame.error, FileNotFoundError):

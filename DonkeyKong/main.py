@@ -12,7 +12,8 @@ from human_agent import HumanAgent
 from character import Character
 
 from AI_agent import DQN_Agent
-  
+
+import config
 
 
 def main():
@@ -20,9 +21,7 @@ def main():
     pygame.init()
 
     num = 2
-    screen_width = 1500
-    screen_height = 820
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
     pygame.display.set_caption("Donkey Kong PyGame Recreation")
 
     # --- STATS VARIABLES ---
@@ -32,10 +31,12 @@ def main():
     win_history = []
 
     # Create environment
-    env = Environment(screen_width, screen_height)
+    env = Environment(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
     # Create player character
-    character = Character(50, screen_height - 60)
+    player_x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
+    player_y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
+    character = Character(player_x, player_y)
     env.add_player(character)
 
     # --- SELECT AGENT HERE ---
@@ -47,8 +48,8 @@ def main():
         id=f'donkey-kong {num}',
         config={
             "name": f'donkey-kong {num}',
-            "screen_width": screen_width,
-            "screen_height": screen_height,
+            "screen_width": config.SCREEN_WIDTH,
+            "screen_height": config.SCREEN_HEIGHT,
             "model_loaded": os.path.exists("dqn_model.pth"),
             "initial_epsilon": player_agent.epsilon if hasattr(player_agent, "epsilon") else None,
             "Model": str(player_agent.model) if hasattr(player_agent, "model") else None
@@ -142,19 +143,19 @@ def main():
 
                 print(f"Game Over. Score: {env.score}. Restarting...")
 
-                env = Environment(screen_width, screen_height)
-                character = Character(50, screen_height - 60)
+                env = Environment(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+                character = Character(config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET, config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET)
                 env.add_player(character)
 
             else:
 
                 game_over_font = pygame.font.SysFont('Arial', 50)
                 game_over_text = game_over_font.render('GAME OVER', True, (255, 0, 0))
-                screen.blit(game_over_text, (screen_width // 2 - 150, screen_height // 2 - 25))
+                screen.blit(game_over_text, (config.SCREEN_WIDTH // 2 - 150, config.SCREEN_HEIGHT // 2 - 25))
 
                 restart_font = pygame.font.SysFont('Arial', 25)
                 restart_text = restart_font.render('Press R to Restart', True, (255, 255, 255))
-                screen.blit(restart_text, (screen_width // 2 - 100, screen_height // 2 + 30))
+                screen.blit(restart_text, (config.SCREEN_WIDTH // 2 - 100, config.SCREEN_HEIGHT // 2 + 30))
 
                 pygame.display.flip()
 
@@ -169,8 +170,8 @@ def main():
 
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
 
-                            env = Environment(screen_width, screen_height)
-                            character = Character(50, screen_height - 60)
+                            env = Environment(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+                            character = Character(config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET, config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET)
                             env.add_player(character)
 
                             waiting_for_restart = False

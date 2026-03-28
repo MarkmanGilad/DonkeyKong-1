@@ -8,6 +8,7 @@ from donkey_kong import DonkeyKong
 from barrel import Barrel
 from princess import Princess
 from ladder import Ladder
+import config
 
 class Environment:
     def __init__(self, screen_width, screen_height):
@@ -16,14 +17,15 @@ class Environment:
         
         # Game state variables
         self.score = 0
-        self.lives = 3
+        self.lives = config.INITIAL_LIVES
         self.game_over = False
+        self.highest_platform = 0
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
         
         # Gravity and physics constants
-        self.gravity = 0.8
+        self.gravity = config.GRAVITY
         
         # Sprite groups
         self.all_sprites = pygame.sprite.Group()
@@ -45,7 +47,7 @@ class Environment:
         # Platforms are angled downward from left to right
         platform_list = [
             # width, height, x, y, angle
-            [self.screen_width, 20, 0, self.screen_height - 20, 0],           # Ground (flat)
+            [self.screen_width - 300, 20, 300, self.screen_height - 20, 8],   # Ground (barrels roll right)
             [800, 20, 400, self.screen_height - 160, -8],                     # First platform (angled)
             [900, 20, 250, self.screen_height - 300, 8],                      # Second platform (angled opposite)
             [950, 20, 300, self.screen_height - 440, -8],                     # Third platform (angled)
@@ -118,10 +120,10 @@ class Environment:
         # Throw barrels (timer)
         self.barrel_timer += 1
         random_chance = random.random()
-        if self.barrel_timer >= self.barrel_interval:
+        if config.BARRELS_ENABLED and self.barrel_timer >= self.barrel_interval:
             self._throw_barrel()
             self.barrel_timer = 0
-            self.barrel_interval = random.randint(100, 300)  # Randomize next barrel interval
+            self.barrel_interval = random.randint(config.BARREL_INTERVAL_MIN, config.BARREL_INTERVAL_MAX)  # Randomize next barrel interval
 
         # ===== Barrel Physics =====
         for barrel in list(self.barrels):
@@ -179,7 +181,7 @@ class Environment:
 
                         # Decide horizontal roll direction after landing.
                         # Prefer platform.angle if provided; otherwise roll toward nearest edge.
-                        speed = 2
+                        speed = config.BARREL_SPEED
                         plat_angle = getattr(platform, 'angle', 0)
                         if plat_angle:
                             barrel.change_x = speed if plat_angle > 0 else -speed
@@ -189,8 +191,8 @@ class Environment:
 
                         break
 
-            # Remove barrel if it falls off screen or reaches bottom left
-            if barrel.rect.top > self.screen_height or (barrel.rect.bottom >= self.screen_height - 40 and barrel.rect.right < 50):
+            # Remove barrel if it falls off screen or reaches bottom right
+            if barrel.rect.top > self.screen_height or (barrel.rect.bottom >= self.screen_height - 40 and barrel.rect.left > self.screen_width - 50):
                 barrel.kill()
 
         # ===== Player Physics =====
@@ -202,8 +204,8 @@ class Environment:
             if not self.player.on_ladder:
                 self.player.change_y += self.gravity
                 # Cap falling speed
-                if self.player.change_y > 12:
-                    self.player.change_y = 12
+                if self.player.change_y > config.MAX_FALL_SPEED:
+                    self.player.change_y = config.MAX_FALL_SPEED
             else:
                 # On ladder - no gravity, allow player input to control vertical movement
                 pass
@@ -251,11 +253,28 @@ class Environment:
                 self.player.change_y = 0
                 self.player.is_jumping = False
 
+            # Fall off lower platform (left edge) = death
+            ground_platform = None
+            for p in self.platforms:
+                if p.platform_number == 0:
+                    ground_platform = p
+                    break
+            if ground_platform and self.player.rect.bottom >= ground_platform.rect.top - 5:
+                if self.player.rect.right < ground_platform.rect.left:
+                    self.lives -= 1
+                    self.player.rect.x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
+                    self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
+                    self.player.on_ladder = False
+                    self.player.change_y = 0
+                    self.player.is_jumping = False
+                    if self.lives <= 0:
+                        self.game_over = True
+
             # Barrel collision
             if pygame.sprite.spritecollide(self.player, self.barrels, True):
                 self.lives -= 1
-                self.player.rect.x = 50
-                self.player.rect.y = self.screen_height - 60
+                self.player.rect.x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
+                self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
                 self.player.on_ladder = False
                 self.player.change_y = 0
                 self.player.is_jumping = False
@@ -265,9 +284,10 @@ class Environment:
 
             # Princess collision (win condition)
             if pygame.sprite.collide_rect(self.player, self.princess):
-                self.score += 1000
-                self.player.rect.x = 50
-                self.player.rect.y = self.screen_height - 60
+                self.score += config.WIN_SCORE
+                self.highest_platform = 0
+                self.player.rect.x = config.SCREEN_WIDTH - config.PLAYER_SPAWN_X_OFFSET
+                self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
                 self.player.on_ladder = False
                 self.player.change_y = 0
                 for barrel in self.barrels:
@@ -288,7 +308,7 @@ class Environment:
             'on_ladder': 0,
             'in_air': 0,
             'ladder_dx': 0,
-            'barrel_dx': 9999,
+            'barrel_dx': 0,
             'princess_dx': 0,
             'same_platform_princess': 0,
             'platform_left_dx': 0,
@@ -488,6 +508,12 @@ class Environment:
         prev_lives = self.lives
         prev_score = self.score
         prev_on_ladder = self.player.on_ladder
+
+        # Track platform progress
+        current_plat = self.player.current_platform_number
+        if current_plat > self.highest_platform:
+            self.score += (current_plat - self.highest_platform) * config.PLATFORM_SCORE
+            self.highest_platform = current_plat
         
         # --- EXECUTE PHYSICS ---
         
@@ -594,7 +620,7 @@ class Environment:
         # A. Reward for climbing UP (y decreases)
         diff_y = prev_y - self.player.rect.y
         if diff_y > 0:
-            reward += diff_y * 5.0  # Increased reward for going up
+            reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
 
         # B. Distance Shaping: Reward getting closer to LADDER
         if not self.player.on_ladder:
@@ -602,55 +628,55 @@ class Environment:
             curr_lad_dist = abs(next_state_dict['ladder_dx'])
 
             if curr_lad_dist < prev_lad_dist:
-                reward += 3.0  # Increased reward for moving toward ladder
+                reward += config.REWARD_TOWARD_LADDER
             elif curr_lad_dist > prev_lad_dist:
-                reward -= 3.0  # Increased penalty for moving away
+                reward -= config.REWARD_AWAY_LADDER
 
-        # C. Distance Shaping: Reward getting closer to PRINCESS
-        prev_prin_dist = abs(prev_state_dict['princess_dx'])
-        curr_prin_dist = abs(next_state_dict['princess_dx'])
-        if curr_prin_dist < prev_prin_dist:
-            reward += 2.0  # Increased reward for moving toward princess
+        # C. Distance Shaping: Reward getting closer to PRINCESS (only on same platform)
+        if next_state_dict['same_platform_princess'] == 1:
+            prev_prin_dist = abs(prev_state_dict['princess_dx'])
+            curr_prin_dist = abs(next_state_dict['princess_dx'])
+            if curr_prin_dist < prev_prin_dist:
+                reward += config.REWARD_TOWARD_PRINCESS
 
         # D. Reward for jumping over barrels
-        if jump_happened:
+        if jump_happened and prev_state_dict['barrel_dx'] != 0:
             barrel_distance = abs(prev_state_dict['barrel_dx'])
 
-            if barrel_distance > 200:
-                reward -= 10  # Increased penalty for irrelevant jumps
-            elif 80 < barrel_distance <= 200:
-                reward -= 5  # Increased penalty for distant barrels
+            if barrel_distance > config.REWARD_JUMP_DISTANT_THRESHOLD:
+                reward -= config.REWARD_JUMP_IRRELEVANT
+            elif config.REWARD_JUMP_CLOSE_THRESHOLD < barrel_distance <= config.REWARD_JUMP_DISTANT_THRESHOLD:
+                reward -= config.REWARD_JUMP_DISTANT
             else:
-                reward += 5  # Reduced reward for close barrels
+                reward += config.REWARD_JUMP_CLOSE
 
         # E. Penalty for staying still
         if self.player.rect.x == prev_state_dict['player_x'] and self.player.rect.y == prev_state_dict['player_y']:
-            reward -= 2.0  # Penalty for not moving
+            reward += config.REWARD_IDLE
 
         # F. Survival / Winning / Losing
         if self.lives < prev_lives or (self.game_over and self.lives == 0):
-            reward = -100
+            reward = config.REWARD_DEATH
 
         if self.score > prev_score:
-            reward = +5000
+            reward = config.REWARD_WIN
 
         # G. Living penalty (encourage speed)
-        reward -= 1
+        reward += config.REWARD_ALIVE
 
         # H. Reward for grabbing a ladder (encourages ladder use)
         if self.player.on_ladder and not prev_on_ladder:
-            reward += 10  # Reward for using ladders
+            reward += config.REWARD_GRAB_LADDER
 
         # G. Reward for reaching platform via ladder (successful climb)
         if not self.player.on_ladder and prev_on_ladder:
             # Successfully exited ladder, likely reached a platform
-            reward += 40  # Strong reward for successful climb
+            reward += config.REWARD_EXIT_LADDER
 
-        # H. Scaled penalty for prolonged hanging (starts after 30 frames, not abrupt)
+        # H. Scaled penalty for prolonged hanging (starts after threshold, not abrupt)
         hold_cnt = getattr(self.player, 'ladder_hold_counter', 0)
-        if hold_cnt > 30:
-            # Scale penalty: 0.3 per extra frame beyond 30
-            hang_penalty = (hold_cnt - 30) * 0.3
+        if hold_cnt > config.REWARD_HANG_THRESHOLD:
+            hang_penalty = (hold_cnt - config.REWARD_HANG_THRESHOLD) * config.REWARD_HANG_PENALTY_PER_FRAME
             reward -= hang_penalty
 
         # Return the new tensor state, the reward, and done flag

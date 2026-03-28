@@ -1,6 +1,7 @@
 # donkey_kong.py - Donkey Kong character that throws barrels
 import pygame
 import random
+import os
 
 class DonkeyKong(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -13,7 +14,7 @@ class DonkeyKong(pygame.sprite.Sprite):
         # Try to load DK image, use default rectangle if not found
         try:
             # Load image if available
-            image_path = "D:\\2DonkeyKong\\DonkeyKong\\images\\donkey_kong.png"
+            image_path = os.path.join(os.path.dirname(__file__), "images", "donkey_kong.png")
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.width, self.height))
         except (pygame.error, FileNotFoundError):

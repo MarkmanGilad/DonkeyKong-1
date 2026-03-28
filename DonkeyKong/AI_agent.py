@@ -4,37 +4,24 @@ import torch.optim as optim
 import random
 import numpy as np
 from collections import deque
-
-class DQN(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(DQN, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, output_dim)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        return self.fc3(x)
+from DQN import DQN
+import config
 
 class DQN_Agent:
     def __init__(self):
-        self.state_dim = 11
-        self.action_dim = 8
+        self.state_dim = config.STATE_DIM
+        self.action_dim = config.ACTION_DIM
         
         # --- EXPLORATION ---
-        self.epsilon = 1.0
-        self.epsilon_min = 0.05
-        #decay for quick test:
-        #self.epsilon_decay = 0.985 # Decay slower (let it explore more)
-        #dcay for actual training:
-        self.epsilon_decay = 0.9995
+        self.epsilon = config.EPSILON_START
+        self.epsilon_min = config.EPSILON_MIN
+        self.epsilon_decay = config.EPSILON_DECAY
         
         # --- TRAINING HYPERPARAMETERS ---
-        self.learning_rate = 0.001  # Increased (safe because of Target Network)
-        self.gamma = 0.99
-        self.batch_size = 64
-        self.memory = deque(maxlen=50000)
+        self.learning_rate = config.LEARNING_RATE
+        self.gamma = config.GAMMA
+        self.batch_size = config.BATCH_SIZE
+        self.memory = deque(maxlen=config.MEMORY_SIZE)
         self.train_step_counter = 0
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -66,10 +53,7 @@ class DQN_Agent:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def train(self):
-        if len(self.memory) < self.batch_size:
-            return
-
+    def sample(self):
         batch = random.sample(self.memory, self.batch_size)
         state_batch, action_batch, reward_batch, next_state_batch, done_batch = zip(*batch)
 
@@ -79,10 +63,13 @@ class DQN_Agent:
         next_state_batch = torch.stack(next_state_batch).to(self.device)
         done_batch = torch.tensor(done_batch, dtype=torch.float32).to(self.device)
 
-        # Normalize batches
-        for i in [1, 5, 6, 7, 9, 10]:
-            state_batch[:, i] /= 1500.0
-            next_state_batch[:, i] /= 1500.0
+        return state_batch, action_batch, reward_batch, next_state_batch, done_batch
+
+    def train(self):
+        if len(self.memory) < self.batch_size:
+            return None
+
+        state_batch, action_batch, reward_batch, next_state_batch, done_batch = self.sample()
 
         # 1. Get current Q values from Main Network
         q_values = self.model(state_batch)
@@ -100,16 +87,14 @@ class DQN_Agent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
-        # Update epsilon
-        # if self.epsilon > self.epsilon_min:
-        #     self.epsilon *= self.epsilon_decay
+       
             
-        if self.train_step_counter % 100 == 0:
-            print(f"TRAINING... Epsilon: {self.epsilon:.4f} | Loss: {loss.item():.5f}")    
+        # if self.train_step_counter % config.TRAIN_LOG_INTERVAL == 0:
+        #     print(f"TRAINING... Epsilon: {self.epsilon:.4f} | Loss: {loss.item():.5f}")    
 
         # --- UPDATE TARGET NETWORK ---
-        # Every 1000 steps, update the target network to match the main network
         self.train_step_counter += 1
-        if self.train_step_counter % 1000 == 0:
+        if self.train_step_counter % config.TARGET_UPDATE_FREQ == 0:
             self.target_model.load_state_dict(self.model.state_dict())
+
+        return loss.item()

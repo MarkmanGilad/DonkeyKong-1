@@ -1,5 +1,6 @@
 # ladder.py - Ladder objects for climbing between platforms
 import pygame
+import os
 
 class Ladder(pygame.sprite.Sprite):
     def __init__(self, x, bottom_y, height):
@@ -12,7 +13,7 @@ class Ladder(pygame.sprite.Sprite):
         # Try to load ladder image, use default rectangle if not found
         try:
             # Load image if available
-            image_path = "D:\\2DonkeyKong\\DonkeyKong\\images\\ladder.png"
+            image_path = os.path.join(os.path.dirname(__file__), "images", "ladder.png")
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.width, self.height))
         except (pygame.error, FileNotFoundError):

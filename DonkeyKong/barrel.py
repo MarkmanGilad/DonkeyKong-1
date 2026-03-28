@@ -1,6 +1,7 @@
 # barrel.py - Barrels thrown by Donkey Kong
 import pygame
 import random
+import os
 
 class Barrel(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -17,7 +18,7 @@ class Barrel(pygame.sprite.Sprite):
         # Try to load barrel image, use default rectangle if not found
         try:
             # Load image if available
-            image_path = "D:\\2DonkeyKong\\DonkeyKong\\images\\barrel.png"
+            image_path = os.path.join(os.path.dirname(__file__), "images", "barrel.png")
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (self.width, self.height))
         except (pygame.error, FileNotFoundError):

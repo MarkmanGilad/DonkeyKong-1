@@ -1,5 +1,6 @@
 import pygame
 import os
+import config
 
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -9,9 +10,9 @@ class Character(pygame.sprite.Sprite):
         self.y = y
         self.change_x = 0
         self.change_y = 0
-        self.speed = 3
-        self.climb_speed = 3
-        self.jump_power = 10  # Reduced for more natural jump
+        self.speed = config.PLAYER_SPEED
+        self.climb_speed = config.PLAYER_CLIMB_SPEED
+        self.jump_power = config.PLAYER_JUMP_POWER
 
         self.facing_right = True
         self.on_ladder = False
@@ -32,10 +33,11 @@ class Character(pygame.sprite.Sprite):
         try:
             print("Loading character images...")
 
-            self.images['default'] = self.load_image("D:\\2DonkeyKong\\DonkeyKong\\images\\mario_idle.png")
-            self.images['right'] = self.load_image("D:\\2DonkeyKong\\DonkeyKong\\images\\mario_right.png")
-            self.images['left'] = self.load_image("D:\\2DonkeyKong\\DonkeyKong\\images\\mario_left.png")
-            self.images['climb'] = self.load_image("D:\\2DonkeyKong\\DonkeyKong\\images\\mario_back.png")
+            img_dir = os.path.join(os.path.dirname(__file__), "images")
+            self.images['default'] = self.load_image(os.path.join(img_dir, "mario_idle.png"))
+            self.images['right'] = self.load_image(os.path.join(img_dir, "mario_right.png"))
+            self.images['left'] = self.load_image(os.path.join(img_dir, "mario_left.png"))
+            self.images['climb'] = self.load_image(os.path.join(img_dir, "mario_back.png"))
 
         except Exception as e:
             print(f"Error loading character images: {e}")
