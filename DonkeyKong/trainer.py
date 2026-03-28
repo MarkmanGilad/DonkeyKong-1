@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 54
+    num = 55
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -18,7 +18,7 @@ def main():
 
     agent = DQN_Agent()
 
-    best_score = 0
+    best_score = float('-inf')
 
     wandb.init(
         project=WANDB_PROJECT,
@@ -116,9 +116,7 @@ def main():
             env.render(screen)
             pygame.display.flip()
 
-        best_score = max(best_score, env.score)
-
-        print(f"#{num} Ep {episode} | Steps: {step} | Platform: {env.player.current_platform_number} | Score: {env.score} | Reward: {total_reward:.1f} | Epsilon: {agent.epsilon:.4f} | Best: {best_score}")
+        print(f"#{num} Ep {episode} | Steps: {step} | Platform: {env.player.current_platform_number} | Score: {env.score} | Reward: {total_reward:.1f} | Epsilon: {agent.epsilon:.4f} | Best Score: {best_score}")
 
         avg_loss = sum(episode_losses) / len(episode_losses) if episode_losses else 0
 

@@ -53,7 +53,7 @@ class Environment:
             [900, 20, 250, self.screen_height - 300, 8],                      # Second platform (angled opposite)
             [950, 20, 300, self.screen_height - 440, -8],                     # Third platform (angled)
             [900, 20, 250, self.screen_height - 580, 8],                      # Fourth platform (angled opposite)
-            [600, 20, 400, self.screen_height - 720, 0],                      # Top platform (flat)
+            [710, 20, 300, self.screen_height - 720, 0],                      # Top platform (flat, extended left)
         ]
         
         for index, platform_data in enumerate(platform_list):

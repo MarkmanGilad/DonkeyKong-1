@@ -178,6 +178,11 @@
 - **File:** `config.py`
 - **Change:** `MAX_STEPS_PER_EPISODE`: 5000 → **50000**. Gives the agent much more time per episode to explore and learn.
 
+### 35. Fixed best_score Tracking and Print Format
+- **File:** `trainer.py`
+- **Problem:** `best_score` initialized to 0, so negative scores (from barrel hit penalties) never updated it. Print showed misleading "Best: 0".
+- **Fix:** `best_score` initialized to `float('-inf')`. Print now shows actual `Score` and labeled `Best Score`.
+
 ## Documentation Created
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.
 - `reward_reference.md` — Complete reward breakdown with config values and flow.
