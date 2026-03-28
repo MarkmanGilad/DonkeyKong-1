@@ -654,6 +654,11 @@ class Environment:
             else:
                 reward += config.REWARD_JUMP_CLOSE
 
+        # D2. Penalty for not jumping when barrel is very close
+        if not jump_happened and next_state_dict['in_air'] == 0 and not self.player.on_ladder:
+            if next_state_dict['barrel_dx'] != 0 and abs(next_state_dict['barrel_dx']) <= config.REWARD_JUMP_CLOSE_THRESHOLD:
+                reward -= config.REWARD_NO_JUMP_PENALTY
+
         # E. Penalty for staying still
         if self.player.rect.x == prev_state_dict['player_x'] and self.player.rect.y == prev_state_dict['player_y']:
             reward += config.REWARD_IDLE

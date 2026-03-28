@@ -28,6 +28,11 @@ All rewards are calculated in `environment.step()` after the action is executed.
 | Jump when barrel ≤ 50 px away | +0.5 | `REWARD_JUMP_CLOSE` |
 | No threatening barrel (`barrel_dx == 0`) | — | Skipped entirely |
 
+### D2. No-Jump Penalty (per frame, barrel close)
+| Condition | Reward | Config Constant |
+|-----------|--------|------------------|
+| On ground, not jumping/airborne, not on ladder, barrel ≤ 50 px | −0.5 per frame | `REWARD_NO_JUMP_PENALTY` |
+
 Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD = 100`
 
 **Note:** `barrel_dx` is platform-aware. Off-ladder: only barrels on the same platform facing the player. On-ladder: only barrels on the platform above heading toward the ladder top.

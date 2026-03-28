@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 30
+    num = 31
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -25,10 +25,49 @@ def main():
         name=f"{WANDB_PROJECT}_{num}",
         id=f"{WANDB_PROJECT}_{num}",
         config={
+            # Network
+            "state_dim": STATE_DIM,
+            "action_dim": ACTION_DIM,
+            "hidden_layer_1": HIDDEN_LAYER_1,
+            "hidden_layer_2": HIDDEN_LAYER_2,
+            # Training
             "learning_rate": agent.learning_rate,
             "gamma": agent.gamma,
             "batch_size": agent.batch_size,
-            "epsilon_decay_steps": EPSILON_DECAY_STEPS
+            "memory_size": MEMORY_SIZE,
+            "target_update_freq": TARGET_UPDATE_FREQ,
+            # Exploration
+            "epsilon_start": EPSILON_START,
+            "epsilon_min": EPSILON_MIN,
+            "epsilon_decay_steps": EPSILON_DECAY_STEPS,
+            # Trainer
+            "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
+            # Physics
+            "barrel_speed": BARREL_SPEED,
+            "barrels_enabled": BARRELS_ENABLED,
+            "gravity": GRAVITY,
+            "jump_power": PLAYER_JUMP_POWER,
+            # Rewards
+            "reward_climb_up": REWARD_CLIMB_UP_MULTIPLIER,
+            "reward_toward_ladder": REWARD_TOWARD_LADDER,
+            "reward_away_ladder": REWARD_AWAY_LADDER,
+            "reward_toward_princess": REWARD_TOWARD_PRINCESS,
+            "reward_jump_close": REWARD_JUMP_CLOSE,
+            "reward_jump_distant": REWARD_JUMP_DISTANT,
+            "reward_jump_irrelevant": REWARD_JUMP_IRRELEVANT,
+            "reward_no_jump_penalty": REWARD_NO_JUMP_PENALTY,
+            "reward_jump_close_threshold": REWARD_JUMP_CLOSE_THRESHOLD,
+            "reward_jump_distant_threshold": REWARD_JUMP_DISTANT_THRESHOLD,
+            "reward_death": REWARD_DEATH,
+            "reward_win": REWARD_WIN,
+            "reward_alive": REWARD_ALIVE,
+            "reward_idle": REWARD_IDLE,
+            "reward_grab_ladder": REWARD_GRAB_LADDER,
+            "reward_exit_ladder": REWARD_EXIT_LADDER,
+            "reward_hang_threshold": REWARD_HANG_THRESHOLD,
+            "reward_hang_penalty_per_frame": REWARD_HANG_PENALTY_PER_FRAME,
+            # Game
+            "initial_lives": INITIAL_LIVES,
         }
     )
 

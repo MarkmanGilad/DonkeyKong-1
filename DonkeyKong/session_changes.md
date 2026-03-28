@@ -115,6 +115,16 @@
 - **Problem:** `EPSILON_DECAY_STEPS = 10000` caused epsilon to hit minimum after ~4 episodes (~2500 steps each).
 - **Fix:** Increased to `100000` — epsilon decays linearly over ~40 episodes.
 
+### 22. No-Jump Penalty When Barrel Is Close
+- **File:** `config.py`, `environment.py`
+- **Problem:** Agent had no negative signal for standing still while a barrel was about to hit it. The one-time jump reward was too sparse.
+- **Fix:** Added `REWARD_NO_JUMP_PENALTY = 0.5`. Every frame the agent is on the ground (not jumping, not in air, not on ladder) with a barrel within 50px, it gets −0.5. Fires continuously, creating mounting pressure to jump.
+
+### 23. Comprehensive wandb Config Logging
+- **File:** `trainer.py`
+- **Problem:** wandb config only logged 4 parameters (learning_rate, gamma, batch_size, epsilon_decay_steps). Most hyperparameters were untracked.
+- **Fix:** Now logs all key parameters: network architecture, training hyperparameters, exploration schedule, physics constants, all reward values/thresholds, and game settings. Makes every run fully reproducible from the wandb dashboard.
+
 ## Documentation Created
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.
 - `reward_reference.md` — Complete reward breakdown with config values and flow.
