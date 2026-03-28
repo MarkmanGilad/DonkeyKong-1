@@ -378,11 +378,28 @@ class Environment:
 
         # --- Closest BARREL FACING the player (signed delta x) ---
         threatening_barrels = []
-        for b in self.barrels:
-            # Barrel is facing the player
-            if ((b.rect.centerx < player_x and b.change_x > 0) or
-                (b.rect.centerx > player_x and b.change_x < 0)):
-                threatening_barrels.append(b)
+        if state['on_ladder']:
+            # On ladder: barrels on the platform above, moving toward the ladder head
+            next_platform_num = self.player.current_platform_number + 1
+            ladder = self.get_ladder_under_center()
+            if ladder:
+                ladder_x = ladder.rect.centerx
+                for b in self.barrels:
+                    bp = getattr(b, 'current_platform', None)
+                    if bp and getattr(bp, 'platform_number', -1) == next_platform_num:
+                        # Only barrels heading toward the ladder top
+                        if ((b.rect.centerx < ladder_x and b.change_x > 0) or
+                            (b.rect.centerx > ladder_x and b.change_x < 0)):
+                            threatening_barrels.append(b)
+        else:
+            current_plat_num = self.player.current_platform_number
+            for b in self.barrels:
+                # Barrel must be on the same platform and facing the player
+                bp = getattr(b, 'current_platform', None)
+                if bp and getattr(bp, 'platform_number', -1) == current_plat_num:
+                    if ((b.rect.centerx < player_x and b.change_x > 0) or
+                        (b.rect.centerx > player_x and b.change_x < 0)):
+                        threatening_barrels.append(b)
 
         if threatening_barrels:
             closest_barrel = min(

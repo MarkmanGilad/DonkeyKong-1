@@ -10,11 +10,11 @@ from config import *
 
 
 def main():
-    num = 10
+    num = 22
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Donkey Kong Trainer")
+    pygame.display.set_caption(f"Donkey Kong Trainer #{num}")
 
     agent = DQN_Agent()
 
@@ -28,7 +28,7 @@ def main():
             "learning_rate": agent.learning_rate,
             "gamma": agent.gamma,
             "batch_size": agent.batch_size,
-            "epsilon_decay": agent.epsilon_decay
+            "epsilon_decay_steps": EPSILON_DECAY_STEPS
         }
     )
 
@@ -68,7 +68,7 @@ def main():
 
             state = next_state
             total_reward += reward
-            agent.epsilon = max(EPSILON_MIN, agent.epsilon * EPSILON_DECAY)
+            agent.epsilon = max(EPSILON_MIN, EPSILON_START - (agent.train_step_counter * (EPSILON_START - EPSILON_MIN) / EPSILON_DECAY_STEPS))
             if step > MAX_STEPS_PER_EPISODE:
                 done = True
                 agent.remember(state, action, reward, next_state, done)

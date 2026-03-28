@@ -12,6 +12,10 @@
 | `in_air`               | int   | Whether the player is airborne (not on ladder, change_y != 0)      | 0 or 1                |
 | `ladder_dx`            | float | Signed horizontal distance to nearest ladder on current platform   | negative = left        |
 | `barrel_dx`            | float | Signed horizontal distance to closest threatening barrel           | 0 if none              |
+
+**`barrel_dx` logic:**
+- **Not on ladder:** Closest barrel on the **same platform**, facing the player.
+- **On ladder:** Closest barrel on the **platform above**, heading toward the ladder top.
 | `princess_dx`          | float | Signed horizontal distance to princess                             | negative = left        |
 | `same_platform_princess` | int | Whether princess is on the same platform as the player             | 0 or 1                |
 | `platform_left_dx`     | float | Signed distance from player to left edge of current platform       | always ≤ 0             |

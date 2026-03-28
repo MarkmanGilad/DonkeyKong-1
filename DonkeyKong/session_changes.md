@@ -55,11 +55,13 @@
 - `train()` now returns `loss.item()` (or `None`).
 - Trainer accumulates per-episode average loss and logs to wandb.
 
-### 11. Epsilon Decay Per Step
-- **File:** `config.py`, `trainer.py`
+### 11. Epsilon Decay Per Step → Linear Decay
+- **File:** `config.py`, `trainer.py`, `AI_agent.py`
 - Moved epsilon decay from per-episode to per-step inside the training loop.
-- Changed `EPSILON_DECAY` from `0.75` to `0.9999` for smooth exploration ramp-down.
-- Uses config constants (`EPSILON_MIN`, `EPSILON_DECAY`) directly instead of agent attributes.
+- Changed from exponential decay (`epsilon *= 0.9999`) to **linear decay** over `EPSILON_DECAY_STEPS = 10000` steps.
+- Formula: `epsilon = EPSILON_START - (step × (EPSILON_START - EPSILON_MIN) / EPSILON_DECAY_STEPS)`
+- Removed `self.epsilon_decay` attribute from `DQN_Agent`.
+- Uses config constants (`EPSILON_MIN`, `EPSILON_START`, `EPSILON_DECAY_STEPS`) directly.
 
 ### 12. Improved Training Print
 - **File:** `trainer.py`
@@ -79,6 +81,28 @@
 - **File:** `trainer.py`
 - Removed rolling average buffers (`avg_reward`, `avg_score`, `avg_platform`).
 - Wandb logs only: `reward`, `score`, `loss`.
+
+### 16. Jump Thresholds Adjusted to Match Physics
+- **File:** `config.py`
+- **Problem:** Old thresholds (close ≤ 80px, distant ≤ 200px) didn't match actual jump physics. At barrel_speed=2 px/frame, 80px = 40 frames to arrive but jump only lasts ~25 frames — player would land and get hit.
+- **Fix:** `REWARD_JUMP_CLOSE_THRESHOLD`: 80 → **50** (barrel arrives in 25 frames = jump duration). `REWARD_JUMP_DISTANT_THRESHOLD`: 200 → **100** (barrel arrives in 50 frames — too early to jump).
+
+### 17. Upgraded DQN → DDQN (Double DQN)
+- **File:** `AI_agent.py`
+- **Problem:** Standard DQN overestimates Q-values because same network selects and evaluates actions.
+- **Fix:** Main network selects best action (`argmax`), target network evaluates Q-value at that action.
+- Code: `best_actions = self.model(next_state_batch).argmax(1)` → `self.target_model(...).gather(1, best_actions.unsqueeze(1))`
+
+### 18. Training Number in Window Caption
+- **File:** `trainer.py`
+- Screen caption now shows `"Donkey Kong Trainer #N"` where N is the training run number.
+- Non-training modes (`main.py`, `main _trained.py`) keep the generic caption.
+
+### 19. barrel_dx Platform-Aware Filtering
+- **File:** `environment.py`
+- **Problem:** `barrel_dx` picked the closest barrel facing the player from ANY platform. Agent reacted to barrels on completely different levels.
+- **Fix (not on ladder):** Only barrels on the **same platform** as the player AND facing the player are considered.
+- **Fix (on ladder):** Only barrels on the **platform above** (the one being climbed to) AND heading toward the **ladder top** are considered. Uses `get_ladder_under_center()` to find the ladder's x position.
 
 ## Documentation Created
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.

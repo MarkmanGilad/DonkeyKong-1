@@ -5,23 +5,22 @@ import random
 import numpy as np
 from collections import deque
 from DQN import DQN
-import config
+from config import *
 
 class DQN_Agent:
     def __init__(self):
-        self.state_dim = config.STATE_DIM
-        self.action_dim = config.ACTION_DIM
+        self.state_dim = STATE_DIM
+        self.action_dim = ACTION_DIM
         
         # --- EXPLORATION ---
-        self.epsilon = config.EPSILON_START
-        self.epsilon_min = config.EPSILON_MIN
-        self.epsilon_decay = config.EPSILON_DECAY
+        self.epsilon = EPSILON_START
+        self.epsilon_min = EPSILON_MIN
         
         # --- TRAINING HYPERPARAMETERS ---
-        self.learning_rate = config.LEARNING_RATE
-        self.gamma = config.GAMMA
-        self.batch_size = config.BATCH_SIZE
-        self.memory = deque(maxlen=config.MEMORY_SIZE)
+        self.learning_rate = LEARNING_RATE
+        self.gamma = GAMMA
+        self.batch_size = BATCH_SIZE
+        self.memory = deque(maxlen=MEMORY_SIZE)
         self.train_step_counter = 0
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -75,10 +74,10 @@ class DQN_Agent:
         q_values = self.model(state_batch)
         q_value = q_values.gather(1, action_batch.unsqueeze(1)).squeeze(1)
 
-        # 2. Get next Q values from TARGET Network (More stable!)
+        # 2. DDQN: Main network selects action, Target network evaluates it
         with torch.no_grad():
-            next_q_values = self.target_model(next_state_batch)
-            next_q_value = next_q_values.max(1)[0]
+            best_actions = self.model(next_state_batch).argmax(1)
+            next_q_value = self.target_model(next_state_batch).gather(1, best_actions.unsqueeze(1)).squeeze(1)
 
         expected_q_value = reward_batch + (self.gamma * next_q_value * (1 - done_batch))
 
@@ -87,14 +86,11 @@ class DQN_Agent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-       
-            
-        # if self.train_step_counter % config.TRAIN_LOG_INTERVAL == 0:
-        #     print(f"TRAINING... Epsilon: {self.epsilon:.4f} | Loss: {loss.item():.5f}")    
+              
 
         # --- UPDATE TARGET NETWORK ---
         self.train_step_counter += 1
-        if self.train_step_counter % config.TARGET_UPDATE_FREQ == 0:
+        if self.train_step_counter % TARGET_UPDATE_FREQ == 0:
             self.target_model.load_state_dict(self.model.state_dict())
 
         return loss.item()

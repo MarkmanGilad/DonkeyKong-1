@@ -23,12 +23,14 @@ All rewards are calculated in `environment.step()` after the action is executed.
 ### D. Jumping (only when a threatening barrel exists)
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
-| Jump when barrel > 200 px away | −1.0 | `REWARD_JUMP_IRRELEVANT` (1.0, applied via `reward -=`) |
-| Jump when barrel 80–200 px away | −0.5 | `REWARD_JUMP_DISTANT` (0.5, applied via `reward -=`) |
-| Jump when barrel ≤ 80 px away | +0.5 | `REWARD_JUMP_CLOSE` |
+| Jump when barrel > 100 px away | −1.0 | `REWARD_JUMP_IRRELEVANT` (1.0, applied via `reward -=`) |
+| Jump when barrel 50–100 px away | −0.5 | `REWARD_JUMP_DISTANT` (0.5, applied via `reward -=`) |
+| Jump when barrel ≤ 50 px away | +0.5 | `REWARD_JUMP_CLOSE` |
 | No threatening barrel (`barrel_dx == 0`) | — | Skipped entirely |
 
-Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 80`, `REWARD_JUMP_DISTANT_THRESHOLD = 200`
+Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 50`, `REWARD_JUMP_DISTANT_THRESHOLD = 100`
+
+**Note:** `barrel_dx` is platform-aware. Off-ladder: only barrels on the same platform facing the player. On-ladder: only barrels on the platform above heading toward the ladder top.
 
 ### E. Idle Penalty
 | Condition | Reward | Config Constant |
@@ -61,8 +63,8 @@ Thresholds: `REWARD_JUMP_CLOSE_THRESHOLD = 80`, `REWARD_JUMP_DISTANT_THRESHOLD =
 
 1. Start with `reward = 0`
 2. Add components A–E (cumulative)
-3. If death → `reward = −100` (replaces all above)
-4. If win → `reward = +5000` (replaces all above)
+3. If death → `reward = −10.0` (replaces all above)
+4. If win → `reward = +50.0` (replaces all above)
 5. Add living penalty G (always)
 6. Add ladder rewards H (if applicable)
 7. Add hang penalty I (if applicable)
