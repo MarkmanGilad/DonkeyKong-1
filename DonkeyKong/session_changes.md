@@ -301,3 +301,15 @@
   - **H (Grab ladder, +1):** Redundant — B shapes toward ladder (+0.3/step), A rewards climbing (+1.5/step), I rewards arrival (+4). The +1 grab bonus and `_last_exited_ladder` tracking added code for minimal signal.
 - **Fix:** Removed D2 section. Simplified D to binary (≤40px = +5, else = −1). Removed H and `_last_exited_ladder` tracking. Removed `REWARD_NO_JUMP_PENALTY`, `REWARD_JUMP_DISTANT`, `REWARD_JUMP_DISTANT_THRESHOLD`, `REWARD_GRAB_LADDER` from config. Renamed I → H in code.
 - **Result:** 7 sections → 5 (A, B, C, D, F/F2, H). 13 reward constants → 8.
+
+### 47. Reward Hierarchy Fix — Separate Barrel Hit from Death
+- **Files:** `config.py`, `environment.py`, `trainer.py`
+- **Problem:** Fall penalty (−20) was larger than death penalty (−10). Barrel hits and death (life lost) shared the same −10 reward, but barrel hits are survivable while death is game over.
+- **Fix:** Separated barrel hit from death: `REWARD_DEATH = -50.0` (life lost, game over), `REWARD_BARREL_HIT = -10.0` (survives). Reduced `REWARD_FALL_PENALTY` from 20 → 10. Death now checks `lives < prev_lives` first, barrel hit checks `barrel_hits > prev_barrel_hits` with `elif`.
+- **Result:** Penalty hierarchy: Death (−50) > Fall (−10) = Barrel hit (−10). Death symmetric with Win (+50).
+
+### 48. Ladder Re-Grab Bug — Agent Stuck at Ladder Exit
+- **File:** `environment.py`
+- **Problem:** After climbing a ladder and exiting onto a platform, the player stood 20px above the ladder top. The `get_ladder_under_center()` had 24px vertical tolerance, so the old ladder was still detected as `target_ladder`. Pressing UP (action 3) re-grabbed the ladder instead of jumping. This trapped the agent at the exit point — 2/8 random actions (UP, jump-left/right with UP) wasted on re-entry, and the agent learned to stay put.
+- **Fix:** Added guard: `self.player.rect.bottom >= target_ladder.rect.top` for UP-grab. Player must be at or below the ladder top (at the base) to grab via UP. At the exit point (above the ladder top), UP now triggers a jump instead.
+- **Impact:** Agent can now jump and move freely after exiting a ladder. Exploration at ladder exits is no longer consumed by useless re-entry cycles.

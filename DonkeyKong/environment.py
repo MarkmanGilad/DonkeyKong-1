@@ -544,7 +544,10 @@ class Environment:
                     break
 
         if not self.player.on_ladder and target_ladder:
-            if action == 3 or (action == 4 and not self.is_player_on_platform()):
+            # Only allow UP-grab when player is at/below ladder top (at the base), not above it
+            can_grab_up = action == 3 and self.player.rect.bottom >= target_ladder.rect.top
+            can_grab_down = action == 4 and not self.is_player_on_platform()
+            if can_grab_up or can_grab_down:
                 self.player.on_ladder = True
                 # reset hang counter when first grabbing ladder
                 try:
