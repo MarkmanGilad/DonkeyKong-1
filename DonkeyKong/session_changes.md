@@ -320,3 +320,8 @@
 - **Fix 1:** Changed to `>` — model only saves on actual improvement.
 - **Problem 2:** `Character()` was recreated every episode, reloading images from disk each time. Noisy `print("Loading character images...")` logged every episode.
 - **Fix 2:** Added `Character.reset(x, y)` method. Character created once before the loop; `reset()` called each episode. Removed the print from `load_images()`.
+
+### 50. Jump Blocked Near Ladder Exit
+- **File:** `environment.py`
+- **Problem:** After exiting a ladder, `target_ladder` was still detected (24px vertical tolerance in `get_ladder_under_center`). The jump condition `if ... and not target_ladder:` blocked all jumping near ladders. The agent had to walk >40px away before jumping worked — appearing "stuck" at ladder exits even with random epsilon.
+- **Fix:** Removed `and not target_ladder` from the jump condition. Jumping is now always allowed when not on a ladder. The ladder grab logic (which runs first) already prevents unwanted grab via the `can_grab_up` / `can_grab_down` guards added in #48.

@@ -602,7 +602,7 @@ class Environment:
             elif action != 5: # Don't stop horizontal if Jumping
                 self.player.stop_horizontal()
             
-            if (action == 5 or action == 6 or action == 7 or action == 3) and not target_ladder:
+            if (action == 5 or action == 6 or action == 7 or action == 3):
                 if self.is_player_on_platform() and not self.player.is_jumping:
                     self.player.jump()
 

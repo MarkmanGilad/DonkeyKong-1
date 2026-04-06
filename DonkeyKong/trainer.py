@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 74
+    num = 75
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
