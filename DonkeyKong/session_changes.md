@@ -313,3 +313,10 @@
 - **Problem:** After climbing a ladder and exiting onto a platform, the player stood 20px above the ladder top. The `get_ladder_under_center()` had 24px vertical tolerance, so the old ladder was still detected as `target_ladder`. Pressing UP (action 3) re-grabbed the ladder instead of jumping. This trapped the agent at the exit point — 2/8 random actions (UP, jump-left/right with UP) wasted on re-entry, and the agent learned to stay put.
 - **Fix:** Added guard: `self.player.rect.bottom >= target_ladder.rect.top` for UP-grab. Player must be at or below the ladder top (at the base) to grab via UP. At the exit point (above the ladder top), UP now triggers a jump instead.
 - **Impact:** Agent can now jump and move freely after exiting a ladder. Exploration at ladder exits is no longer consumed by useless re-entry cycles.
+
+### 49. Trainer Cleanup — Best Score Fix & Character Reuse
+- **Files:** `trainer.py`, `character.py`
+- **Problem 1:** `best_score` used `>=`, so ties always triggered "New Best Model Saved" every episode (e.g. all −100 scores).
+- **Fix 1:** Changed to `>` — model only saves on actual improvement.
+- **Problem 2:** `Character()` was recreated every episode, reloading images from disk each time. Noisy `print("Loading character images...")` logged every episode.
+- **Fix 2:** Added `Character.reset(x, y)` method. Character created once before the loop; `reset()` called each episode. Removed the print from `load_images()`.

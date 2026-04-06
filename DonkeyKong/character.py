@@ -27,12 +27,24 @@ class Character(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+    def reset(self, x, y):
+        self.x = x
+        self.y = y
+        self.change_x = 0
+        self.change_y = 0
+        self.facing_right = True
+        self.on_ladder = False
+        self.is_jumping = False
+        self.ladder_hold_counter = 0
+        self.image = self.images['default']
+        self.rect.x = x
+        self.rect.y = y
+        self._last_exited_ladder = None
+
     def load_images(self):
         self.images = {}
 
         try:
-            print("Loading character images...")
-
             img_dir = os.path.join(os.path.dirname(__file__), "images")
             self.images['default'] = self.load_image(os.path.join(img_dir, "mario_idle.png"))
             self.images['right'] = self.load_image(os.path.join(img_dir, "mario_right.png"))

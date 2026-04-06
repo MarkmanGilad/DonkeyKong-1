@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 73
+    num = 74
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -79,12 +79,14 @@ def main():
         }
     )
 
+    player_x = SCREEN_WIDTH - PLAYER_SPAWN_X_OFFSET
+    player_y = SCREEN_HEIGHT - PLAYER_SPAWN_Y_OFFSET
+    character = Character(player_x, player_y)
+
     for episode in range(EPISODES):
 
         env = Environment(SCREEN_WIDTH, SCREEN_HEIGHT)
-        player_x = SCREEN_WIDTH - PLAYER_SPAWN_X_OFFSET
-        player_y = SCREEN_HEIGHT - PLAYER_SPAWN_Y_OFFSET
-        character = Character(player_x, player_y)
+        character.reset(player_x, player_y)
         env.add_player(character)
 
         state = env.state_to_tensor(env.get_state())
@@ -134,7 +136,7 @@ def main():
             "hit_rate": (env.barrel_hits / step) * 1000 if step > 0 else 0,
         })
 
-        if env.score >= best_score:
+        if env.score > best_score:
             best_score = env.score
             torch.save(agent.model.state_dict(), f"Data/best_dqn_model_{num}.pth")
             torch.save(agent.target_model.state_dict(), f"Data/best_dqn_target_model_{num}.pth")
