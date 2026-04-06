@@ -261,3 +261,43 @@
   - **Symptom in wandb:** reward kept rising while score dropped — the agent was optimizing for jump farming instead of game progress. Section D's -1.0 penalty for irrelevant jumps was negligible vs the +30–60 climb reward per jump.
 - **Fix:** Added `and self.player.on_ladder` condition. Climb reward now only fires when player is on a ladder. Jumping gives 0 from section A, and -1.0 from section D = net **-1.0** per irrelevant jump.
 - **Impact:** Eliminates the largest reward exploit across all physics configs. Agent can no longer farm reward by jumping in place.
+
+### 41. Ladder Oscillation Exploit — Added Climb Down Penalty
+- **File:** `environment.py`
+- **Problem:** Climbing up on a ladder gave `diff_y * 0.5` reward, but climbing down gave 0. Oscillating up 3px (+1.5) then down 3px (0) = +1.5 net per cycle. Agent could farm reward by bouncing up and down on a ladder indefinitely.
+- **Fix:** Applied the same multiplier to downward ladder movement. Since `diff_y` is negative when going down, `diff_y * 0.5` naturally produces a penalty. Up 3px = +1.5, down 3px = -1.5, net = 0.
+- **Impact:** Ladder oscillation no longer generates free reward. Only net upward progress is rewarded.
+
+### 42. Alive Penalty Reduced
+- **File:** `config.py`
+- **Problem:** After removing the jump exploit (#40), `REWARD_ALIVE = -0.1` dominated the reward landscape. Over 4000 steps = -400, drowning all positive signals (climb ~+300, platforms ~+150, ladder shaping ~+90). Agent couldn't learn because staying alive was net negative.
+- **Fix:** `REWARD_ALIVE`: -0.1 → **-0.01**. Over 4000 steps = -40, no longer dominant.
+
+### 43. Ladder Distance Gate — Prevent Near-Ladder Farming
+- **File:** `environment.py`
+- **Problem:** Toward/away ladder reward fired at any distance, even 1px from the ladder. Agent oscillated near the ladder base, earning +0.3 per approach without climbing.
+- **Fix:** Ladder distance reward only fires when `|ladder_dx| > 40` (the grab range). Within 40px, no directional reward — only `REWARD_GRAB_LADDER` for actually grabbing.
+
+### 44. Fall-Back Cycling Exploit — Platform Drop Penalty
+- **Files:** `config.py`, `environment.py`, `trainer.py`
+- **Problem:** Agent climbed 3 platforms (~+255 reward from climb/grab/exit/walk), then intentionally fell back to a lower platform and re-climbed the same ladders. All rewards were repeatable — no mechanism to prevent cycling. Agent earned ~255 per cycle with zero risk.
+- **Fix:** Added `REWARD_FALL_PENALTY = 20.0`. Any time `current_platform < prev_platform` (and both ≥ 0), agent gets -20. One fall-back cycle now costs -20, making it clearly worse than pushing forward.
+- **Note:** Considered frontier-gating approach (only reward at/above highest platform) but reverted for simplicity. Removed ladder down-climb penalty (#41) as it punished legitimate barrel retreat. Kept down-climb as neutral (0 reward).
+
+### 45. Reward Simplification — Remove Idle, Alive, Hang
+- **Files:** `config.py`, `environment.py`, `trainer.py`, `reward_reference.md`
+- **Problem:** 10 reward sections created a noisy signal. Three sections were redundant or negligible:
+  - **E (Idle, −0.2):** Redundant — directional shaping (B/C) already penalizes not moving toward goals.
+  - **G (Alive, −0.01/step):** Negligible — over 4000 steps only −40, dwarfed by other signals.
+  - **J (Hang):** At −0.03/frame after 30 frames, minimal effect. Ladder stalling already addressed by climb-only reward (A).
+- **Fix:** Removed sections E, G, J from `environment.py`. Removed `REWARD_IDLE`, `REWARD_ALIVE`, `REWARD_HANG_THRESHOLD`, `REWARD_HANG_PENALTY_PER_FRAME` from `config.py`. Cleaned wandb config in `trainer.py`. Softened D2 (`REWARD_NO_JUMP_PENALTY`) from 2.0 → 0.5 to avoid over-penalizing walk-away dodge strategies.
+- **Result:** 10 sections → 7 sections (A, B, C, D, D2, F/F2, H, I). Cleaner signal, fewer hyperparameters.
+
+### 46. Reward Simplification Round 2 — Remove D2, Simplify D, Remove Grab Ladder
+- **Files:** `config.py`, `environment.py`, `trainer.py`, `reward_reference.md`
+- **Problem:** Three more sections were redundant or harmful:
+  - **D2 (No-jump penalty, −0.5/frame):** Punished valid walk-away dodges. Death penalty (−10) already handles failed dodges.
+  - **D middle tier (41–70px, −0.5):** Barely different from far tier (−1.0). Three tiers added complexity without benefit.
+  - **H (Grab ladder, +1):** Redundant — B shapes toward ladder (+0.3/step), A rewards climbing (+1.5/step), I rewards arrival (+4). The +1 grab bonus and `_last_exited_ladder` tracking added code for minimal signal.
+- **Fix:** Removed D2 section. Simplified D to binary (≤40px = +5, else = −1). Removed H and `_last_exited_ladder` tracking. Removed `REWARD_NO_JUMP_PENALTY`, `REWARD_JUMP_DISTANT`, `REWARD_JUMP_DISTANT_THRESHOLD`, `REWARD_GRAB_LADDER` from config. Renamed I → H in code.
+- **Result:** 7 sections → 5 (A, B, C, D, F/F2, H). 13 reward constants → 8.

@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 70
+    num = 72
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -63,19 +63,13 @@ def main():
             "reward_toward_princess": REWARD_TOWARD_PRINCESS,
             "reward_away_princess": REWARD_AWAY_PRINCESS,
             "reward_jump_close": REWARD_JUMP_CLOSE,
-            "reward_jump_distant": REWARD_JUMP_DISTANT,
             "reward_jump_irrelevant": REWARD_JUMP_IRRELEVANT,
-            "reward_no_jump_penalty": REWARD_NO_JUMP_PENALTY,
             "reward_jump_close_threshold": REWARD_JUMP_CLOSE_THRESHOLD,
-            "reward_jump_distant_threshold": REWARD_JUMP_DISTANT_THRESHOLD,
             "reward_death": REWARD_DEATH,
+            "reward_barrel_hit": REWARD_BARREL_HIT,
             "reward_win": REWARD_WIN,
-            "reward_alive": REWARD_ALIVE,
-            "reward_idle": REWARD_IDLE,
-            "reward_grab_ladder": REWARD_GRAB_LADDER,
             "reward_exit_ladder": REWARD_EXIT_LADDER,
-            "reward_hang_threshold": REWARD_HANG_THRESHOLD,
-            "reward_hang_penalty_per_frame": REWARD_HANG_PENALTY_PER_FRAME,
+            "reward_fall_penalty": REWARD_FALL_PENALTY,
             # Game
             "initial_lives": INITIAL_LIVES,
             "max_barrel_hits": MAX_BARREL_HITS,

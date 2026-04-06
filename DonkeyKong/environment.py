@@ -633,20 +633,23 @@ class Environment:
         # --- REWARD CALCULATION (IMPROVED) ---
         reward = 0
 
-        # A. Reward for climbing UP on a ladder (y decreases)
+        # A. Reward for climbing UP on a ladder / Penalty for climbing DOWN
         diff_y = prev_y - self.player.rect.y
-        if diff_y > 0 and self.player.on_ladder:
-            reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
+        if self.player.on_ladder:
+            if diff_y > 0:
+                reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
 
         # B. Distance Shaping: Reward getting closer to LADDER
         if not self.player.on_ladder:
             prev_lad_dist = abs(prev_state_dict['ladder_dx'])
             curr_lad_dist = abs(next_state_dict['ladder_dx'])
 
-            if curr_lad_dist < prev_lad_dist:
-                reward += config.REWARD_TOWARD_LADDER
-            elif curr_lad_dist > prev_lad_dist:
-                reward -= config.REWARD_AWAY_LADDER
+            # Stop rewarding when within ladder grab range (40px) to prevent oscillation farming
+            if curr_lad_dist > 40:
+                if curr_lad_dist < prev_lad_dist:
+                    reward += config.REWARD_TOWARD_LADDER
+                elif curr_lad_dist > prev_lad_dist:
+                    reward -= config.REWARD_AWAY_LADDER
 
         # C. Distance Shaping: Reward getting closer to PRINCESS (only on same platform)
         if next_state_dict['same_platform_princess'] == 1:
@@ -660,54 +663,31 @@ class Environment:
         # D. Reward for jumping over barrels
         if jump_happened and prev_state_dict['barrel_dx'] != 0:
             barrel_distance = abs(prev_state_dict['barrel_dx'])
-
-            if barrel_distance > config.REWARD_JUMP_DISTANT_THRESHOLD:
-                reward -= config.REWARD_JUMP_IRRELEVANT
-            elif config.REWARD_JUMP_CLOSE_THRESHOLD < barrel_distance <= config.REWARD_JUMP_DISTANT_THRESHOLD:
-                reward -= config.REWARD_JUMP_DISTANT
-            else:
+            if barrel_distance <= config.REWARD_JUMP_CLOSE_THRESHOLD:
                 reward += config.REWARD_JUMP_CLOSE
+            else:
+                reward -= config.REWARD_JUMP_IRRELEVANT
         elif jump_happened and prev_state_dict['barrel_dx'] == 0:
             reward -= config.REWARD_JUMP_IRRELEVANT
 
-        # D2. Penalty for not jumping when barrel is very close
-        if not jump_happened and next_state_dict['in_air'] == 0 and not self.player.on_ladder:
-            if next_state_dict['barrel_dx'] != 0 and abs(next_state_dict['barrel_dx']) <= config.REWARD_JUMP_CLOSE_THRESHOLD:
-                reward -= config.REWARD_NO_JUMP_PENALTY
-
-        # E. Penalty for staying still
-        if self.player.rect.x == prev_state_dict['player_x'] and self.player.rect.y == prev_state_dict['player_y']:
-            reward += config.REWARD_IDLE
-
         # F. Survival / Winning / Losing
-        if self.barrel_hits > prev_barrel_hits or self.lives < prev_lives:
+        if self.lives < prev_lives:
             reward = config.REWARD_DEATH
+        elif self.barrel_hits > prev_barrel_hits:
+            reward = config.REWARD_BARREL_HIT
 
         if self.score > prev_score:
             reward = config.REWARD_WIN
 
-        # G. Living penalty (encourage speed)
-        reward += config.REWARD_ALIVE
+        # F2. Big penalty for falling to a lower platform
+        current_plat = self.player.current_platform_number
+        if current_plat >= 0 and prev_platform >= 0 and current_plat < prev_platform:
+            reward -= config.REWARD_FALL_PENALTY
 
-        # H. Reward for grabbing a ladder (only if not re-grabbing the same one)
-        if self.player.on_ladder and not prev_on_ladder:
-            current_ladder = self.get_ladder_under_center()
-            last_ladder = getattr(self.player, '_last_exited_ladder', None)
-            if current_ladder is not last_ladder:
-                reward += config.REWARD_GRAB_LADDER
-
-        # I. Reward for reaching a HIGHER platform via ladder (not just exiting)
+        # H. Reward for reaching a HIGHER platform via ladder
         if not self.player.on_ladder and prev_on_ladder:
             if self.player.current_platform_number > prev_platform:
                 reward += config.REWARD_EXIT_LADDER
-            # Track which ladder was exited to prevent re-grab farming
-            self.player._last_exited_ladder = self.get_ladder_under_center()
-
-        # H. Scaled penalty for prolonged hanging (starts after threshold, not abrupt)
-        hold_cnt = getattr(self.player, 'ladder_hold_counter', 0)
-        if hold_cnt > config.REWARD_HANG_THRESHOLD:
-            hang_penalty = (hold_cnt - config.REWARD_HANG_THRESHOLD) * config.REWARD_HANG_PENALTY_PER_FRAME
-            reward -= hang_penalty
 
         # Return the new tensor state, the reward, and done flag
         next_state = self.state_to_tensor(next_state_dict)
