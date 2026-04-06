@@ -330,3 +330,8 @@
 - **File:** `config.py`
 - **Problem:** Agent climbed ladder 0, exited onto platform 1, walked left, fell back to platform 0, and repeated. Cycle profit: climb A (+60) + exit H (+4) + walk-back B (~+30) − fall F2 (−10) = **+84 net**. Massively profitable farming loop.
 - **Fix:** `REWARD_FALL_PENALTY`: 10 → **100**. Cycle now: +94 − 100 = **−6 net** — unprofitable. Falls are still recoverable but no longer farmable.
+
+### 52. Removed Ladder Distance 40px Gate
+- **File:** `environment.py`
+- **Problem:** B reward (toward/away ladder) had a 40px gate — no reward fired within 40px of the ladder. Agent walked toward ladder, hit the silent zone, and started jumping aimlessly. Had to randomly stumble into action 3 to grab.
+- **Fix:** Removed the `if curr_lad_dist > 40:` gate. B reward now fires at all distances. Asymmetric reward (+0.3/−0.4) already prevents oscillation farming (net −0.1 per cycle), making the gate redundant.

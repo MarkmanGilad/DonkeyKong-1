@@ -647,12 +647,10 @@ class Environment:
             prev_lad_dist = abs(prev_state_dict['ladder_dx'])
             curr_lad_dist = abs(next_state_dict['ladder_dx'])
 
-            # Stop rewarding when within ladder grab range (40px) to prevent oscillation farming
-            if curr_lad_dist > 40:
-                if curr_lad_dist < prev_lad_dist:
-                    reward += config.REWARD_TOWARD_LADDER
-                elif curr_lad_dist > prev_lad_dist:
-                    reward -= config.REWARD_AWAY_LADDER
+            if curr_lad_dist < prev_lad_dist:
+                reward += config.REWARD_TOWARD_LADDER
+            elif curr_lad_dist > prev_lad_dist:
+                reward -= config.REWARD_AWAY_LADDER
 
         # C. Distance Shaping: Reward getting closer to PRINCESS (only on same platform)
         if next_state_dict['same_platform_princess'] == 1:
