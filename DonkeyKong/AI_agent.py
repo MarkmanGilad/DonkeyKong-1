@@ -28,6 +28,7 @@ class DQN_Agent:
         # --- THE MAIN BRAIN ---
         self.model = DQN(self.state_dim, self.action_dim).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=LR_MILESTONES, gamma=LR_GAMMA)
         self.criterion = nn.MSELoss()
 
         # --- THE TARGET NETWORK (Stability Hack) ---
@@ -86,6 +87,7 @@ class DQN_Agent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        self.scheduler.step()
               
 
         # --- UPDATE TARGET NETWORK ---

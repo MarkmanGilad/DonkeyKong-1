@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 55
+    num = 70
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -32,6 +32,8 @@ def main():
             "hidden_layer_2": HIDDEN_LAYER_2,
             # Training
             "learning_rate": agent.learning_rate,
+            "lr_milestones": LR_MILESTONES,
+            "lr_gamma": LR_GAMMA,
             "gamma": agent.gamma,
             "batch_size": agent.batch_size,
             "memory_size": MEMORY_SIZE,
@@ -41,17 +43,25 @@ def main():
             "epsilon_min": EPSILON_MIN,
             "epsilon_decay_steps": EPSILON_DECAY_STEPS,
             # Trainer
+            "episodes": EPISODES,
             "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
             # Physics
+            "player_speed": PLAYER_SPEED,
+            "player_climb_speed": PLAYER_CLIMB_SPEED,
             "barrel_speed": BARREL_SPEED,
+            "barrel_interval_min": BARREL_INTERVAL_MIN,
+            "barrel_interval_max": BARREL_INTERVAL_MAX,
             "barrels_enabled": BARRELS_ENABLED,
             "gravity": GRAVITY,
+            "player_gravity": PLAYER_GRAVITY,
             "jump_power": PLAYER_JUMP_POWER,
+            "max_fall_speed": MAX_FALL_SPEED,
             # Rewards
             "reward_climb_up": REWARD_CLIMB_UP_MULTIPLIER,
             "reward_toward_ladder": REWARD_TOWARD_LADDER,
             "reward_away_ladder": REWARD_AWAY_LADDER,
             "reward_toward_princess": REWARD_TOWARD_PRINCESS,
+            "reward_away_princess": REWARD_AWAY_PRINCESS,
             "reward_jump_close": REWARD_JUMP_CLOSE,
             "reward_jump_distant": REWARD_JUMP_DISTANT,
             "reward_jump_irrelevant": REWARD_JUMP_IRRELEVANT,
@@ -68,13 +78,12 @@ def main():
             "reward_hang_penalty_per_frame": REWARD_HANG_PENALTY_PER_FRAME,
             # Game
             "initial_lives": INITIAL_LIVES,
+            "max_barrel_hits": MAX_BARREL_HITS,
+            "barrel_hit_score_penalty": BARREL_HIT_SCORE_PENALTY,
+            "win_score": WIN_SCORE,
+            "platform_score": PLATFORM_SCORE,
         }
     )
-
-    # ✅ Buffers for 100-episode averaging
-    reward_buffer = []
-    score_buffer = []
-    platform_buffer = []
 
     for episode in range(EPISODES):
 
@@ -116,7 +125,7 @@ def main():
             env.render(screen)
             pygame.display.flip()
 
-        print(f"#{num} Ep {episode} | Steps: {step} | Platform: {env.player.current_platform_number} | Score: {env.score} | Reward: {total_reward:.1f} | Epsilon: {agent.epsilon:.4f} | Best Score: {best_score}")
+        print(f"#{num} Ep {episode} | Steps: {step} | Platforms: {env.total_platforms_reached} | Score: {env.score} | Reward: {total_reward:.1f} | Epsilon: {agent.epsilon:.4f} | Best Score: {best_score}")
 
         avg_loss = sum(episode_losses) / len(episode_losses) if episode_losses else 0
 
@@ -124,6 +133,11 @@ def main():
             "reward": total_reward,
             "score": env.score,
             "loss": avg_loss,
+            "epsilon": agent.epsilon,
+            "learning_rate": agent.scheduler.get_last_lr()[0],
+            "survival_steps": step,
+            "platforms_reached": env.total_platforms_reached,
+            "hit_rate": (env.barrel_hits / step) * 1000 if step > 0 else 0,
         })
 
         if env.score >= best_score:

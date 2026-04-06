@@ -48,6 +48,26 @@
 ### 9. Platform Score
 - **File:** `config.py`, `environment.py`
 - Added `PLATFORM_SCORE = 100` — player gets 100 points per new platform reached.
+
+## Session: April 6, 2026
+
+### 10. PLAYER_JUMP_POWER: 10 → 14
+- **File:** `config.py`
+- **Problem:** With jump power 10, max height = 63px, giving only 19 "safe frames" above the barrel. A barrel (20px wide at 2px/frame) takes 25 frames to cross the player's hitbox. Since 19 < 25, **standing jumps could never clear a barrel** — the player always got clipped at the edge. The agent learned that jumping near barrels is bad (+5 jump − 10 hit = −5 net).
+- **Fix:** Increased `PLAYER_JUMP_POWER` to 14. Max height = 122px, giving 31 safe frames > 25 crossing frames (margin of +6). Still safe for platforms (122px < 140px gap between platforms).
+- **Impact:** Standing jumps (action 5) and directional jumps (actions 6/7) can now clear barrels. Existing reward signals (+5 close jump, −10 hit) are sufficient to teach dodging.
+
+### 11. Jump Reward Thresholds Aligned to Physics
+- **File:** `config.py`
+- **Problem:** `REWARD_JUMP_CLOSE_THRESHOLD = 50` and `REWARD_JUMP_DISTANT_THRESHOLD = 100` did not match actual dodge physics. With jump power 14, gravity 0.8, player 30px, barrel 20px at 2px/frame:
+  - Standing jump (action 5): player is above barrel (>20px) for frames 2–32 (31 frames). Barrel overlap lasts 25 frames (50px / 2px/frame). The dodge window is |barrel_dx| ∈ [29, 39] — only works within ~40px.
+  - At 40–50px (old "close" zone), standing jumps fail — barrel reaches overlap after the player has landed. Agent got +5 for jumping then −10 for the hit, learning to avoid jumping near barrels.
+  - Directional jumps (actions 6/7, relative speed 5px/frame) have a wider window up to ~135px, but the reward should focus on the range where jumping is critical.
+- **Fix:** `REWARD_JUMP_CLOSE_THRESHOLD`: 50 → 40, `REWARD_JUMP_DISTANT_THRESHOLD`: 100 → 70.
+  - **≤ 40px (+5):** Standing jump dodge window — any jump type works here.
+  - **40–70px (−0.5):** Mild penalty — only directional jumps work, discourage reflexive jumping.
+  - **> 70px (−1.0):** Too far — no jump type is needed.
+  - **No-jump penalty (−2/frame):** Also uses the 40px threshold — penalizes only when jumping is actually needed.
 - `highest_platform` tracker resets on princess collision.
 
 ### 10. Loss Logging to wandb
@@ -178,6 +198,27 @@
 - **File:** `config.py`
 - **Change:** `MAX_STEPS_PER_EPISODE`: 5000 → **50000**. Gives the agent much more time per episode to explore and learn.
 
+### 35. Floaty Jump Physics — Separate Player Gravity
+- **Files:** `config.py`, `environment.py`
+- **Problem:** With `JUMP_POWER = 14` and `GRAVITY = 0.8`, max jump height was 122px — nearly reaching the platform above (140px gap), causing the player's head to clip into the platform. Head collision code (`change_y = 0`) cut air time short, reducing frames above barrel height to ~15 — not enough to dodge a barrel (needs 25 frames). Reducing power to 12 lowered the peak to 90px (no clip) but only gave 27 frames above barrel, with a dodge window of just 3 pixels.
+- **Fix:** Added `PLAYER_GRAVITY = 0.3` (used only for player physics). Kept `GRAVITY = 0.8` for barrels. Reduced `PLAYER_JUMP_POWER` from 12 to 6. With lower gravity, the player jumps lower but hangs in the air much longer:
+  - Peak height: 60px (vs 90px before) — 10px below head-clip threshold, no collision
+  - Frames above barrel height (20px): 33 frames (vs 27 before)
+  - Standing dodge window: |barrel_dx| ∈ [31, 45] = 15px wide (vs 3px before)
+  - `REWARD_JUMP_CLOSE_THRESHOLD = 40` fits within [31, 45] — **no threshold changes needed**
+- **Impact:** Jump feels floaty/arcade-like. Barrel dodging is much more forgiving. Barrels still fall at normal speed.
+
+### 36. Wandb Logging Improvements
+- **File:** `trainer.py`
+- **Problem:** Only logged `reward`, `score`, `loss`. Missing key training metrics. Rolling average buffers declared but unused.
+- **Fix:** Added `epsilon`, `survival_steps`, `platform`, `barrel_hits` to per-episode wandb log. Added all missing config params to wandb init (`player_speed`, `player_climb_speed`, `max_fall_speed`, `barrel_interval_min/max`, `episodes`, `max_barrel_hits`, `barrel_hit_score_penalty`, `win_score`, `platform_score`, `player_gravity`). Removed unused rolling average buffers.
+
+### 37. Princess Reward — Added Away Penalty
+- **Files:** `config.py`, `environment.py`, `trainer.py`
+- **Problem:** On platform 5 (top), agent walked away from princess despite low epsilon (~0.01). Princess reward was asymmetric: +0.2 for getting closer, but no penalty for moving away. With no ladder on platform 5, `ladder_dx = 0` and ladder reward never fires — the only directional signal was a weak +0.2 toward princess, insufficient to override learned behavior from lower platforms.
+- **Fix:** Added `REWARD_AWAY_PRINCESS = 0.4` (penalty for moving away). Increased `REWARD_TOWARD_PRINCESS`: 0.2 → 0.3. Now mirrors the ladder reward pattern (+0.3 toward / -0.4 away). Added to wandb config.
+- **Impact:** Agent gets clear directional signal on platform 5 to walk toward princess.
+
 ### 35. Fixed best_score Tracking and Print Format
 - **File:** `trainer.py`
 - **Problem:** `best_score` initialized to 0, so negative scores (from barrel hit penalties) never updated it. Print showed misleading "Best: 0".
@@ -187,3 +228,36 @@
 - `state_action_reference.md` — State dictionary, tensor normalization, and action space reference.
 - `reward_reference.md` — Complete reward breakdown with config values and flow.
 - `session_changes.md` — This file.
+
+## Session: April 6, 2026 (continued)
+
+### 36. Wandb Logging Improvements
+- **File:** `trainer.py`
+- **Changes:** Added `epsilon`, `survival_steps`, `platforms_reached`, `hit_rate` (hits per 1000 steps) to per-episode wandb log. Added all missing config params to wandb init (`player_speed`, `player_climb_speed`, `max_fall_speed`, `barrel_interval_min/max`, `episodes`, `max_barrel_hits`, `barrel_hit_score_penalty`, `win_score`, `platform_score`, `player_gravity`, `lr_milestones`, `lr_gamma`). Removed unused rolling average buffers. Replaced raw `barrel_hits` with `hit_rate` for more meaningful dodge tracking.
+
+### 37. Princess Reward — Added Away Penalty
+- **Files:** `config.py`, `environment.py`, `trainer.py`
+- **Problem:** On platform 5 (top), agent walked away from princess despite low epsilon (~0.01). Princess reward was asymmetric: +0.2 for getting closer, but no penalty for moving away. With no ladder on platform 5, `ladder_dx = 0` and ladder reward never fires — the only directional signal was a weak +0.2 toward princess.
+- **Fix:** Added `REWARD_AWAY_PRINCESS = 0.4`. Increased `REWARD_TOWARD_PRINCESS`: 0.2 → 0.3. Now mirrors the ladder reward pattern (+0.3 toward / -0.4 away). Added to wandb config.
+
+### 38. Learning Rate Decay Schedule
+- **Files:** `config.py`, `AI_agent.py`, `trainer.py`
+- **Change:** Added `MultiStepLR` scheduler with fixed milestones. LR halves at each checkpoint. Current LR logged to wandb per episode.
+- **Config:** `LR_MILESTONES = [200000, 400000, 600000]`, `LR_GAMMA = 0.5`.
+- **Schedule:** 0.001 → 0.0005 → 0.00025 → 0.000125.
+
+### 39. Cumulative Platform Tracking
+- **Files:** `environment.py`, `trainer.py`
+- **Problem:** Logged `current_platform_number` at episode end — after catching princess, player resets to platform 0 and the log shows 0 or -1 instead of the total climb progress.
+- **Fix:** Added `total_platforms_reached` counter. Only increments when player climbs to a new higher platform (not on falls). Resets of `highest_platform` on princess collision don't affect it. Logged as `platforms_reached` in wandb and print.
+
+### 40. Climb Reward Exploit — Jump Farming Fix
+- **File:** `environment.py`
+- **Problem:** Reward section A gave `diff_y * 0.5` for ALL upward movement, including jumps. This exploit existed from the very beginning — every jump gave massive unearned reward through climb reward, regardless of physics settings:
+  - Old physics (power=14, gravity=0.8): peak 122px → +61.0 climb reward per jump, -1.0 jump penalty = **+60.0 net**
+  - Mid physics (power=12, gravity=0.8): peak 90px → +45.0 per jump = **+44.0 net**
+  - Floaty physics (power=6, gravity=0.3): peak 60px → +30.0 per jump = **+29.0 net**
+  - At ~100 jumps/episode, the agent earned ~2750–6000 reward from jumping alone, dwarfing all other signals.
+  - **Symptom in wandb:** reward kept rising while score dropped — the agent was optimizing for jump farming instead of game progress. Section D's -1.0 penalty for irrelevant jumps was negligible vs the +30–60 climb reward per jump.
+- **Fix:** Added `and self.player.on_ladder` condition. Climb reward now only fires when player is on a ladder. Jumping gives 0 from section A, and -1.0 from section D = net **-1.0** per irrelevant jump.
+- **Impact:** Eliminates the largest reward exploit across all physics configs. Agent can no longer farm reward by jumping in place.

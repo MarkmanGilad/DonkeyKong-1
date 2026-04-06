@@ -20,6 +20,7 @@ class Environment:
         self.lives = config.INITIAL_LIVES
         self.game_over = False
         self.highest_platform = 0
+        self.total_platforms_reached = 0
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -205,9 +206,9 @@ class Environment:
             # Synchronize player's on_ladder state with environment detection
             #self.player.on_ladder = self.is_player_on_ladder()
 
-            # Apply gravity if not on ladder
+            # Apply gravity if not on ladder (use PLAYER_GRAVITY for floatier jumps)
             if not self.player.on_ladder:
-                self.player.change_y += self.gravity
+                self.player.change_y += config.PLAYER_GRAVITY
                 # Cap falling speed
                 if self.player.change_y > config.MAX_FALL_SPEED:
                     self.player.change_y = config.MAX_FALL_SPEED
@@ -525,7 +526,9 @@ class Environment:
         # Track platform progress
         current_plat = self.player.current_platform_number
         if current_plat > self.highest_platform:
-            self.score += (current_plat - self.highest_platform) * config.PLATFORM_SCORE
+            platforms_gained = current_plat - self.highest_platform
+            self.score += platforms_gained * config.PLATFORM_SCORE
+            self.total_platforms_reached += platforms_gained
             self.highest_platform = current_plat
         
         # --- EXECUTE PHYSICS ---
@@ -630,9 +633,9 @@ class Environment:
         # --- REWARD CALCULATION (IMPROVED) ---
         reward = 0
 
-        # A. Reward for climbing UP (y decreases)
+        # A. Reward for climbing UP on a ladder (y decreases)
         diff_y = prev_y - self.player.rect.y
-        if diff_y > 0:
+        if diff_y > 0 and self.player.on_ladder:
             reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
 
         # B. Distance Shaping: Reward getting closer to LADDER
@@ -651,6 +654,8 @@ class Environment:
             curr_prin_dist = abs(next_state_dict['princess_dx'])
             if curr_prin_dist < prev_prin_dist:
                 reward += config.REWARD_TOWARD_PRINCESS
+            elif curr_prin_dist > prev_prin_dist:
+                reward -= config.REWARD_AWAY_PRINCESS
 
         # D. Reward for jumping over barrels
         if jump_happened and prev_state_dict['barrel_dx'] != 0:
