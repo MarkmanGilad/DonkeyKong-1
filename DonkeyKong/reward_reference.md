@@ -6,7 +6,7 @@
 | **B** | Toward/away ladder (>40px) | +0.3 / −0.4 | Navigate to ladders |
 | **C** | Toward/away princess (same plat) | +0.3 / −0.4 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +5.0 / −1.0 | Binary dodge decision |
-| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / −10 | Terminal + anti-exploit |
+| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / −100 | Terminal + anti-exploit |
 | **H** | Exit ladder to higher plat | +4.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
@@ -62,7 +62,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 ### F2. Fall Penalty (additive after F)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| Landed on a lower platform than before | −10.0 | `REWARD_FALL_PENALTY` |
+| Landed on a lower platform than before | −100.0 | `REWARD_FALL_PENALTY` |
 
 **Note:** Prevents climb-fall-reclimb cycling exploit. Applied with `−=` so it stacks with death if both happen.
 
@@ -80,7 +80,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 3. If death → `reward = −50.0` (replaces all above)
 4. Elif barrel hit → `reward = −10.0` (replaces all above)
 5. If win → `reward = +50.0` (replaces all above)
-6. If fell to lower platform → `reward −= 10.0` (stacks on top of F)
+6. If fell to lower platform → `reward −= 100.0` (stacks on top of F)
 7. Add H (ladder exit) — always additive
 
 ## Removed Sections (historical)

@@ -325,3 +325,8 @@
 - **File:** `environment.py`
 - **Problem:** After exiting a ladder, `target_ladder` was still detected (24px vertical tolerance in `get_ladder_under_center`). The jump condition `if ... and not target_ladder:` blocked all jumping near ladders. The agent had to walk >40px away before jumping worked — appearing "stuck" at ladder exits even with random epsilon.
 - **Fix:** Removed `and not target_ladder` from the jump condition. Jumping is now always allowed when not on a ladder. The ladder grab logic (which runs first) already prevents unwanted grab via the `can_grab_up` / `can_grab_down` guards added in #48.
+
+### 51. Fall Penalty Increased to Block Climb-Fall Cycling
+- **File:** `config.py`
+- **Problem:** Agent climbed ladder 0, exited onto platform 1, walked left, fell back to platform 0, and repeated. Cycle profit: climb A (+60) + exit H (+4) + walk-back B (~+30) − fall F2 (−10) = **+84 net**. Massively profitable farming loop.
+- **Fix:** `REWARD_FALL_PENALTY`: 10 → **100**. Cycle now: +94 − 100 = **−6 net** — unprofitable. Falls are still recoverable but no longer farmable.
