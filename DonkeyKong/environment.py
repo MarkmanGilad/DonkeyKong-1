@@ -287,8 +287,6 @@ class Environment:
                 self.player.rect.y = config.SCREEN_HEIGHT - config.PLAYER_SPAWN_Y_OFFSET
                 self.player.on_ladder = False
                 self.player.change_y = 0
-                for barrel in self.barrels:
-                    barrel.kill()
 
             # Ensure player sprite updates (animation/image switching)
             try:
@@ -603,7 +601,7 @@ class Environment:
             elif action != 5: # Don't stop horizontal if Jumping
                 self.player.stop_horizontal()
             
-            if (action == 5 or action == 6 or action == 7 or action == 3):
+            if (action == 5 or action == 6 or action == 7):
                 if self.is_player_on_platform() and not self.player.is_jumping:
                     self.player.jump()
 

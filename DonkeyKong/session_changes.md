@@ -426,3 +426,11 @@
 ### 72. Add Gradient Clipping
 - **Files:** `AI_agent.py`
 - **Change:** Added `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` after `loss.backward()` to prevent large TD errors from destabilizing the network weights. Standard DQN practice.
+
+### 73. Fix Action 3 (UP) Triggering Unwanted Jumps at Ladder Tops
+- **Files:** `environment.py`
+- **Change:** Removed `action == 3` from the jump trigger condition. Previously, action 3 (UP) was listed alongside jump actions (5/6/7), so after climbing a ladder and landing on a platform, the AI's continued UP input caused repeated vertical hops in place with no horizontal movement. Now action 3 only climbs ladders; jumping requires actions 5/6/7.
+
+### 74. Barrels Persist After Reaching Princess
+- **Files:** `environment.py`
+- **Change:** Removed the barrel kill loop from the princess collision handler. Barrels now continue rolling when the player wins and respawns at the bottom, making each subsequent run progressively harder as more barrels accumulate on screen.
