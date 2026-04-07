@@ -335,3 +335,38 @@
 - **File:** `environment.py`
 - **Problem:** B reward (toward/away ladder) had a 40px gate — no reward fired within 40px of the ladder. Agent walked toward ladder, hit the silent zone, and started jumping aimlessly. Had to randomly stumble into action 3 to grab.
 - **Fix:** Removed the `if curr_lad_dist > 40:` gate. B reward now fires at all distances. Asymmetric reward (+0.3/−0.4) already prevents oscillation farming (net −0.1 per cycle), making the gate redundant.
+
+### 53. Reward Normalization — Halve Shaping, Proportional Fall
+- **File:** `config.py`
+- **Problem:** Reward scale was unbalanced. Fall penalty (−100) was 2× death (−50), needed because shaping rewards made climb-fall cycle worth +94. Shaping rewards dominated the signal.
+- **Fix:** Halved all shaping rewards and set fall = death:
+  - `REWARD_CLIMB_UP_MULTIPLIER`: 0.5 → **0.25**
+  - `REWARD_TOWARD_LADDER/PRINCESS`: 0.3 → **0.15**
+  - `REWARD_AWAY_LADDER/PRINCESS`: 0.4 → **0.2**
+  - `REWARD_JUMP_CLOSE`: 5.0 → **3.0**
+  - `REWARD_JUMP_IRRELEVANT`: 1.0 → **0.5**
+  - `REWARD_EXIT_LADDER`: 4.0 → **2.0**
+  - `REWARD_FALL_PENALTY`: 100 → **50** (same as death)
+- **Result:** Cycle now: A(+30) + H(+2) + B(+15) − Fall(−50) = **−3 net**. Terminal rewards (death/win ±50) properly dominate shaping signals.
+
+### 54. Slower Learning & Longer Exploration
+- **File:** `config.py`
+- **Problem:** Agent learned fast but forgot after epsilon reached min. High LR (0.001) overreacted to correlated replay data once exploration dropped, destabilizing learned Q-values.
+- **Fix:** `LEARNING_RATE`: 0.001 → **0.0005** (smaller updates, more stable). `EPSILON_DECAY_STEPS`: 100000 → **300000** (3× longer exploration, more diverse replay buffer before exploitation dominates). `EPSILON_MIN` kept at 0.01 — reducing it would increase forgetting.
+
+### 55. Replay Buffer Size Increase
+- **File:** `config.py`
+- **Problem:** `MEMORY_SIZE = 50000` held only ~10 episodes (~5000 steps each). By the time epsilon hit min, all exploration-era data was gone. Training became correlated → forgetting.
+- **Fix:** `MEMORY_SIZE`: 50000 → **200000** (~40 episodes). Keeps diverse exploration data alive well into exploitation phase. Reduces correlated sampling and retains rare events (barrel dodges, falls, ladder exits) longer.
+
+### 56. HUD — Score, Episode, Epsilon On-Screen
+- **Files:** `environment.py`, `trainer.py`
+- **Change:** `render()` now accepts optional `episode` and `epsilon` params. Displays Score and Hits left always. Episode and Epsilon shown only during training (trainer passes them). `main.py` / `main _trained.py` call `render()` with no args — show score only.
+
+### 57. HUD — Best Score & Reward Sum
+- **Files:** `environment.py`, `trainer.py`
+- **Change:** `render()` now also accepts `best_score` and `total_reward` params. Best Score shown always when provided. Reward sum shown only during training (updates live each frame). Trainer passes both values.
+
+### 58. DQN Network — Widen First Hidden Layer
+- **Files:** `config.py`
+- **Change:** `HIDDEN_LAYER_1`: 128 → **256**. Network shape now 11→256→128→8 (~36K params). Gives more capacity to represent spatial relationships (barrel timing, ladder approach, multi-platform navigation) without adding depth.

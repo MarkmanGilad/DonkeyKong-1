@@ -728,7 +728,7 @@ class Environment:
                 self.player.stop_vertical()
                 break
 
-    def render(self, screen):
+    def render(self, screen, episode=None, epsilon=None, best_score=None, total_reward=None):
         """Render the game state"""
         self.platforms.draw(screen)
         self.ladders.draw(screen)
@@ -738,11 +738,25 @@ class Environment:
         screen.blit(self.donkey_kong.image, self.donkey_kong.rect)
         screen.blit(self.princess.image, self.princess.rect)
 
-        # HUD: remaining barrel hits
+        # HUD
         font = pygame.font.SysFont(None, 30)
         hits_left = config.MAX_BARREL_HITS - self.barrel_hits
-        hud_text = font.render(f"Hits left: {hits_left}", True, (255, 255, 255))
-        screen.blit(hud_text, (10, 10))
+        y_offset = 10
+        screen.blit(font.render(f"Score: {self.score}", True, (255, 255, 255)), (10, y_offset))
+        y_offset += 25
+        screen.blit(font.render(f"Hits left: {hits_left}", True, (255, 255, 255)), (10, y_offset))
+        if best_score is not None:
+            y_offset += 25
+            screen.blit(font.render(f"Best Score: {best_score}", True, (255, 255, 255)), (10, y_offset))
+        if episode is not None:
+            y_offset += 25
+            screen.blit(font.render(f"Episode: {episode}", True, (255, 255, 255)), (10, y_offset))
+        if epsilon is not None:
+            y_offset += 25
+            screen.blit(font.render(f"Epsilon: {epsilon:.4f}", True, (255, 255, 255)), (10, y_offset))
+        if total_reward is not None:
+            y_offset += 25
+            screen.blit(font.render(f"Reward: {total_reward:.1f}", True, (255, 255, 255)), (10, y_offset))
 
     def close(self):
         """Clean up pygame resources"""
