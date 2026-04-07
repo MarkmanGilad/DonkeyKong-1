@@ -639,8 +639,7 @@ class Environment:
         # A. Reward for climbing UP on a ladder / Penalty for climbing DOWN
         diff_y = prev_y - self.player.rect.y
         if self.player.on_ladder:
-            if diff_y > 0:
-                reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
+            reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
 
         # B. Distance Shaping: Reward getting closer to LADDER
         if not self.player.on_ladder:

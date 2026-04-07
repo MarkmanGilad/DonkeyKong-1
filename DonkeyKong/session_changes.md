@@ -370,3 +370,7 @@
 ### 58. DQN Network — Widen First Hidden Layer
 - **Files:** `config.py`
 - **Change:** `HIDDEN_LAYER_1`: 128 → **256**. Network shape now 11→256→128→8 (~36K params). Gives more capacity to represent spatial relationships (barrel timing, ladder approach, multi-platform navigation) without adding depth.
+
+### 59. Fix Ladder Climb Reward Exploit
+- **Files:** `environment.py`
+- **Change:** Section A climb reward was one-sided — only rewarded going up, no penalty for going down. Agent farmed reward by cycling up/down on ladder. Fix: apply `diff_y * REWARD_CLIMB_UP_MULTIPLIER` symmetrically so going down penalizes equally. Net reward for up+down = 0.
