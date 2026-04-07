@@ -3,7 +3,7 @@
 | Section | What | Value | Purpose |
 |---------|------|-------|---------|
 | **A** | Climb up / down (on ladder) | `+Δy × 0.25` / `Δy × 0.3` | Asymmetric: down costs more than up gains |
-| **B** | Toward/away ladder | +0.15 / −0.2 | Navigate to ladders |
+| **B** | Grab frame / toward / away ladder | +0.15 / +0.15 / −0.2 | Navigate to + grab ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
 | **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / per-px | Terminal + per-pixel fall penalty |
@@ -22,13 +22,14 @@ All rewards are calculated in `environment.step()` after the action is executed.
 
 **Anti-exploit:** Down penalty (0.3) > up reward (0.25), so oscillating up/down nets negative. Stepping off ladder and falling uses the same per-pixel penalty in F2, so the exploit of falling off sideways to avoid the down-climb penalty is closed.
 
-### B. Distance to Ladder (off-ladder)
+### B. Distance to Ladder (off-ladder + grab frame)
 | Condition | Reward | Config Constant |
-|-----------|--------|------------------|
-| Moved closer to ladder | +0.15 | `REWARD_TOWARD_LADDER` |
-| Moved away from ladder | −0.2 | `REWARD_AWAY_LADDER` |
+|-----------|--------|-------------------|
+| Grab frame (off→on ladder) | +0.15 | `REWARD_TOWARD_LADDER` |
+| Moved closer to ladder (off-ladder) | +0.15 | `REWARD_TOWARD_LADDER` |
+| Moved away from ladder (off-ladder) | −0.2 | `REWARD_AWAY_LADDER` |
 
-**Note:** Asymmetric penalty: one toward+away cycle = +0.15 − 0.2 = −0.05 net.
+**Note:** Grab frame check fires first (`on_ladder and not prev_on_ladder`), so the final approach move is rewarded. Off-ladder distance shaping is `elif`. Asymmetric penalty: one toward+away cycle = +0.15 − 0.2 = −0.05 net.
 
 ### C. Distance to Princess (same platform only)
 | Condition | Reward | Config Constant |
@@ -85,7 +86,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 ## Removed Sections (historical)
 - **D2 (No-jump penalty)**: Punished valid walk-away dodges; death penalty already handles failed dodges
 - **D middle tier (41–70px)**: Merged into single penalty; binary close/far is cleaner
-- **Grab ladder (+1)**: Redundant — B shapes toward ladder, A rewards climbing, H rewards arrival
+- **Grab ladder (+1)**: Old flat +1 bonus removed; replaced by B grab frame (+0.15) which is consistent with the approach shaping
 - **E (Idle)**: Redundant with directional shaping (B/C)
 - **G (Alive penalty)**: Negligible at −0.01/step
 - **J (Hang penalty)**: Addressed by climb-only reward (A)

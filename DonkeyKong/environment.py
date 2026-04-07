@@ -444,7 +444,6 @@ class Environment:
             ],
             dtype=torch.float32
         )
-        state_tensor[0] = 0  # Zeroed out — platform number disabled to improve cross-platform generalization
         state_tensor[1] = 0  # Zeroed out — player_x redundant with platform_left_dx/right_dx + ladder_dx
         state_tensor[2] = state_tensor[2] / self.screen_height  # Normalize height from platform
         state_tensor[5] = state_tensor[5] / self.screen_width  # Normalize ladder dx
@@ -650,7 +649,10 @@ class Environment:
                 reward += diff_y * config.REWARD_CLIMB_DOWN_MULTIPLIER  # diff_y is negative, so this subtracts
 
         # B. Distance Shaping: Reward getting closer to LADDER
-        if not self.player.on_ladder:
+        # Also reward the grab frame (off→on ladder counts as reaching the ladder)
+        if self.player.on_ladder and not prev_on_ladder:
+            reward += config.REWARD_TOWARD_LADDER
+        elif not self.player.on_ladder:
             prev_lad_dist = abs(prev_state_dict['ladder_dx'])
             curr_lad_dist = abs(next_state_dict['ladder_dx'])
 

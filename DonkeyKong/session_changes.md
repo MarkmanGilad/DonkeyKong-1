@@ -402,3 +402,7 @@
 ### 66. Fix Fall Penalty — Use Total Fall Distance
 - **Files:** `environment.py`
 - **Change:** F2 fall penalty was using `prev_y` (one frame's delta, ~3-5px) instead of total fall distance. Agent exploited this: climb +30, fall penalty only -1.5 = net +28 per cycle. Fix: track `_last_grounded_y` (updated when on platform or ladder). F2 now uses `player.rect.y - _last_grounded_y` for the full fall distance. A 140px fall now costs -42, making the climb-fall cycle net-negative (-10).
+
+### 67. Add Grab Frame Reward in Section B
+- **Files:** `environment.py`
+- **Change:** Section B's `not self.player.on_ladder` gate blocked reward on the frame the agent stepped onto the ladder. The agent learned to idle at dx≈0 instead of pressing climb because the final move (off→on ladder) gave no B reward. Fix: added `if on_ladder and not prev_on_ladder: reward += REWARD_TOWARD_LADDER` as the first check in Section B, before the normal distance check. The off-ladder distance shaping is now `elif`.
