@@ -10,7 +10,7 @@
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
-5 active sections: A, B, C, D, F (with F2), H.
+6 active sections: A, B, C, D, F (with F2), H.
 
 ## Reward Components
 
@@ -80,7 +80,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 3. If death → `reward = −50.0` (replaces all above)
 4. Elif barrel hit → `reward = −10.0` (replaces all above)
 5. If win → `reward = +50.0` (replaces all above)
-6. If fell to lower platform → `reward −= 50.0` (stacks on top of F)
+6. If fell to lower platform → `reward -= fall_pixels × 0.3` (per-pixel, stacks on top of F)
 7. Add H (ladder exit) — always additive
 
 ## Removed Sections (historical)

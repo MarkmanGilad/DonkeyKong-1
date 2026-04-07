@@ -406,3 +406,7 @@
 ### 67. Add Grab Frame Reward in Section B
 - **Files:** `environment.py`
 - **Change:** Section B's `not self.player.on_ladder` gate blocked reward on the frame the agent stepped onto the ladder. The agent learned to idle at dx≈0 instead of pressing climb because the final move (off→on ladder) gave no B reward. Fix: added `if on_ladder and not prev_on_ladder: reward += REWARD_TOWARD_LADDER` as the first check in Section B, before the normal distance check. The off-ladder distance shaping is now `elif`.
+
+### 68. Stabilize Ladder State After Near-Ladder Grab
+- **Files:** `environment.py`, `reward_reference.md`
+- **Change:** After snapping the player onto a nearby ladder, the step logic could still use the old pre-snap `ladder_under_center` value. That could clear `on_ladder` in the same step and distort both the Section B grab-frame reward and the Section H ladder-exit reward. Fix: immediately set `ladder_under_center = target_ladder` after the snap so the rest of the step sees the correct ladder state. Also corrected the reward reference header from 5 active sections to 6.

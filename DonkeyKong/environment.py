@@ -567,6 +567,7 @@ class Environment:
                 self.player.change_x = 0
                 if action == 3: self.player.move_up()
                 elif action == 4: self.player.move_down()
+                ladder_under_center = target_ladder
 
         if self.player.on_ladder:
             if action == 3:
