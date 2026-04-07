@@ -737,7 +737,7 @@ class Environment:
                 self.player.stop_vertical()
                 break
 
-    def render(self, screen, episode=None, epsilon=None, best_score=None, total_reward=None):
+    def render(self, screen, episode=None, epsilon=None, best_score=None, total_reward=None, steps=None):
         """Render the game state"""
         self.platforms.draw(screen)
         self.ladders.draw(screen)
@@ -766,6 +766,9 @@ class Environment:
         if total_reward is not None:
             y_offset += 25
             screen.blit(font.render(f"Reward: {total_reward:.1f}", True, (255, 255, 255)), (10, y_offset))
+        if steps is not None:
+            y_offset += 25
+            screen.blit(font.render(f"Steps: {steps}", True, (255, 255, 255)), (10, y_offset))
 
     def close(self):
         """Clean up pygame resources"""

@@ -125,7 +125,7 @@ def main():
                 agent.remember(state, action, reward, next_state, done)
                 break
             screen.fill((0, 0, 0))
-            env.render(screen, episode=episode, epsilon=agent.epsilon, best_score=best_score, total_reward=total_reward)
+            env.render(screen, episode=episode, epsilon=agent.epsilon, best_score=best_score, total_reward=total_reward, steps=step)
             pygame.display.flip()
 
         print(f"#{num} Ep {episode} | Steps: {step} | Platforms: {env.total_platforms_reached} | Score: {env.score} | Reward: {total_reward:.1f} | Epsilon: {agent.epsilon:.4f} | Best Score: {best_score}")
