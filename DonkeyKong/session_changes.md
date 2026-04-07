@@ -386,3 +386,7 @@
 ### 62. Two-Phase Epsilon Decay
 - **Files:** `config.py`, `trainer.py`
 - **Change:** Replaced single linear epsilon decay with two phases. Phase 1: `EPSILON_START` (1.0) → `EPSILON_MID` (0.05) over `EPSILON_DECAY_STEPS_1` (300K). Phase 2: `EPSILON_MID` (0.05) → `EPSILON_MIN` (0.01) over `EPSILON_DECAY_STEPS_2` (300K). Gives a longer fine-tuning tail at low exploration. Old constants `EPSILON_DECAY_STEPS` replaced by `EPSILON_DECAY_STEPS_1`/`EPSILON_DECAY_STEPS_2` + `EPSILON_MID`.
+
+### 63. Zero Out player_x in State Tensor
+- **Files:** `environment.py`
+- **Change:** `state_tensor[1]` (player_x) now forced to 0. Absolute x position is fully redundant — `platform_left_dx`, `platform_right_dx`, `ladder_dx`, `barrel_dx`, `princess_dx` already encode all relative spatial info. Makes the state fully egocentric: identical situations produce identical inputs regardless of absolute screen position.

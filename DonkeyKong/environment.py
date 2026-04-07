@@ -445,7 +445,7 @@ class Environment:
             dtype=torch.float32
         )
         state_tensor[0] = 0  # Zeroed out — platform number disabled to improve cross-platform generalization
-        state_tensor[1] = state_tensor[1] / self.screen_width  # Normalize x position
+        state_tensor[1] = 0  # Zeroed out — player_x redundant with platform_left_dx/right_dx + ladder_dx
         state_tensor[2] = state_tensor[2] / self.screen_height  # Normalize height from platform
         state_tensor[5] = state_tensor[5] / self.screen_width  # Normalize ladder dx
         state_tensor[6] = state_tensor[6] / self.screen_width  # Normalize barrel dx

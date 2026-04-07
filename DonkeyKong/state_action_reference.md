@@ -26,7 +26,7 @@
 | Index | Source Key               | Normalization                    | Resulting Range |
 |-------|--------------------------|----------------------------------|-----------------|
 | 0     | `player_platform`        | **Zeroed out** (always 0)        | 0              |
-| 1     | `player_x`               | ÷ screen_width (1500)            | 0 to 1.0        |
+| 1     | `player_x`               | **Zeroed out** (always 0)        | 0              |
 | 2     | `height_from_platform`   | ÷ screen_height (820)            | 0 to ~1.0       |
 | 3     | `on_ladder`              | no normalization                 | 0 or 1          |
 | 4     | `in_air`                 | no normalization                 | 0 or 1          |
