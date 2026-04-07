@@ -21,7 +21,6 @@ class Environment:
         self.game_over = False
         self.highest_platform = 0
         self.total_platforms_reached = 0
-        self._last_grounded_y = screen_height  # Track y when last on a platform
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -521,11 +520,6 @@ class Environment:
         prev_barrel_hits = self.barrel_hits
         prev_score = self.score
         prev_on_ladder = self.player.on_ladder
-        prev_platform = self.player.current_platform_number
-
-        # Track last grounded y for fall penalty
-        if self.is_player_on_platform() or self.player.on_ladder:
-            self._last_grounded_y = self.player.rect.y
 
         # Track platform progress
         current_plat = self.player.current_platform_number
@@ -690,17 +684,23 @@ class Environment:
         if self.score > prev_score:
             reward = config.REWARD_WIN
 
-        # F2. Per-pixel penalty for falling to a lower platform
-        # Uses _last_grounded_y to capture TOTAL fall distance, not just one frame
-        current_plat = self.player.current_platform_number
-        if current_plat >= 0 and prev_platform >= 0 and current_plat < prev_platform:
-            fall_pixels = self.player.rect.y - self._last_grounded_y  # total fall from last grounded position
-            if fall_pixels > 0:
-                reward -= fall_pixels * config.REWARD_CLIMB_DOWN_MULTIPLIER
+        # F2. Immediate penalty for stepping past a platform edge
+        was_grounded_on_platform = (
+            prev_state_dict['player_platform'] >= 0 and
+            prev_state_dict['on_ladder'] == 0 and
+            prev_state_dict['in_air'] == 0 and
+            prev_state_dict['height_from_platform'] == 0
+        )
+        if was_grounded_on_platform and not self.player.on_ladder and not self.is_player_on_platform():
+            prev_platform_left = prev_state_dict['player_x'] + prev_state_dict['platform_left_dx']
+            prev_platform_right = prev_state_dict['player_x'] + prev_state_dict['platform_right_dx']
+            player_centerx = self.player.rect.centerx
+            if player_centerx < prev_platform_left or player_centerx > prev_platform_right:
+                reward -= config.REWARD_FALL_PENALTY
 
         # H. Reward for reaching a HIGHER platform via ladder
         if not self.player.on_ladder and prev_on_ladder:
-            if self.player.current_platform_number > prev_platform:
+            if self.player.current_platform_number > prev_state_dict['player_platform']:
                 reward += config.REWARD_EXIT_LADDER
 
         # Return the new tensor state, the reward, and done flag

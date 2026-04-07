@@ -410,3 +410,7 @@
 ### 68. Stabilize Ladder State After Near-Ladder Grab
 - **Files:** `environment.py`, `reward_reference.md`
 - **Change:** After snapping the player onto a nearby ladder, the step logic could still use the old pre-snap `ladder_under_center` value. That could clear `on_ladder` in the same step and distort both the Section B grab-frame reward and the Section H ladder-exit reward. Fix: immediately set `ladder_under_center = target_ladder` after the snap so the rest of the step sees the correct ladder state. Also corrected the reward reference header from 5 active sections to 6.
+
+### 69. Replace Landing Fall Penalty With Immediate Edge Penalty
+- **Files:** `environment.py`, `reward_reference.md`
+- **Change:** Removed the old fall-tracking logic based on previous grounded platform/y and deleted the delayed landing penalty. F2 now uses only platform edges: if the player was grounded on a platform in the previous step and then leaves that platform from the left or right edge while not on a ladder, the agent gets an immediate `-50` penalty. This moves the punishment closer to the bad action and simplifies the reward logic.

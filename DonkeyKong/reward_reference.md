@@ -6,7 +6,7 @@
 | **B** | Grab frame / toward / away ladder | +0.15 / +0.15 / −0.2 | Navigate to + grab ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
-| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / per-px | Terminal + per-pixel fall penalty |
+| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / −50 | Terminal + immediate edge penalty |
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
@@ -20,7 +20,7 @@ All rewards are calculated in `environment.step()` after the action is executed.
 | Moved upward on ladder | `+Δy × 0.25` | `REWARD_CLIMB_UP_MULTIPLIER` |
 | Moved downward on ladder | `Δy × 0.3` (negative) | `REWARD_CLIMB_DOWN_MULTIPLIER` |
 
-**Anti-exploit:** Down penalty (0.3) > up reward (0.25), so oscillating up/down nets negative. Stepping off ladder and falling uses the same per-pixel penalty in F2, so the exploit of falling off sideways to avoid the down-climb penalty is closed.
+**Anti-exploit:** Down penalty (0.3) > up reward (0.25), so oscillating up/down nets negative. Stepping off the platform edge now triggers an immediate F2 penalty, so the agent cannot avoid punishment by turning a bad downward move into a delayed fall.
 
 ### B. Distance to Ladder (off-ladder + grab frame)
 | Condition | Reward | Config Constant |
@@ -59,12 +59,12 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 
 **Note:** Death and barrel hit use `reward =` (not `+=`), replacing accumulated A–D rewards. Life lost checks first (highest priority). `INITIAL_LIVES = 1` (fall = instant game over). Barrel hits: player continues from same position, gets −10 reward, −10 score (`BARREL_HIT_SCORE_PENALTY`). Game over after `MAX_BARREL_HITS = 10` hits.
 
-### F2. Fall Penalty — Per-Pixel (additive after F)
+### F2. Edge Exit Penalty (immediate, additive after F)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| Fell to a lower platform | `−fall_pixels × 0.3` | `REWARD_CLIMB_DOWN_MULTIPLIER` |
+| Stepped past the left/right edge of the previous platform | `−50.0` | `REWARD_FALL_PENALTY` |
 
-**Note:** Uses the same per-pixel multiplier as climbing down. Stepping off a ladder sideways and falling 120px costs the same as climbing down 120px (−36). Replaces old flat `REWARD_FALL_PENALTY` (−50).
+**Note:** Triggered immediately when the player was grounded on a platform in the previous step, is no longer on a platform or ladder, and their center passes beyond that platform's left/right edge. This is intentionally closer to the bad action than a delayed landing penalty.
 
 ### H. Ladder Exit (higher platform)
 | Condition | Reward | Config Constant |
@@ -80,7 +80,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 3. If death → `reward = −50.0` (replaces all above)
 4. Elif barrel hit → `reward = −10.0` (replaces all above)
 5. If win → `reward = +50.0` (replaces all above)
-6. If fell to lower platform → `reward -= fall_pixels × 0.3` (per-pixel, stacks on top of F)
+6. If the player steps past a platform edge → `reward -= 50.0` immediately (stacks on top of F)
 7. Add H (ladder exit) — always additive
 
 ## Removed Sections (historical)
