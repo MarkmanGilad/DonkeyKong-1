@@ -10,7 +10,7 @@ from config import *
 
 
 def main():
-    num = 87
+    num = 88
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -40,8 +40,10 @@ def main():
             "target_update_freq": TARGET_UPDATE_FREQ,
             # Exploration
             "epsilon_start": EPSILON_START,
+            "epsilon_mid": EPSILON_MID,
             "epsilon_min": EPSILON_MIN,
-            "epsilon_decay_steps": EPSILON_DECAY_STEPS,
+            "epsilon_decay_steps_1": EPSILON_DECAY_STEPS_1,
+            "epsilon_decay_steps_2": EPSILON_DECAY_STEPS_2,
             # Trainer
             "episodes": EPISODES,
             "max_steps_per_episode": MAX_STEPS_PER_EPISODE,
@@ -112,7 +114,12 @@ def main():
 
             state = next_state
             total_reward += reward
-            agent.epsilon = max(EPSILON_MIN, EPSILON_START - (agent.train_step_counter * (EPSILON_START - EPSILON_MIN) / EPSILON_DECAY_STEPS))
+            # Two-phase linear epsilon decay
+            s = agent.train_step_counter
+            if s <= EPSILON_DECAY_STEPS_1:
+                agent.epsilon = EPSILON_START - s * (EPSILON_START - EPSILON_MID) / EPSILON_DECAY_STEPS_1
+            else:
+                agent.epsilon = max(EPSILON_MIN, EPSILON_MID - (s - EPSILON_DECAY_STEPS_1) * (EPSILON_MID - EPSILON_MIN) / EPSILON_DECAY_STEPS_2)
             if step > MAX_STEPS_PER_EPISODE:
                 done = True
                 agent.remember(state, action, reward, next_state, done)

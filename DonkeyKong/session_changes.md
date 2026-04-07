@@ -382,3 +382,7 @@
 ### 61. Fix Ladder Climb Reward Exploit — Best-Y Tracking
 - **Files:** `environment.py`
 - **Change:** Section A climb reward replaced `diff_y` with `_best_ladder_y` tracking. Only rewards **new upward progress** — each height on the ladder can only be rewarded once. Exploits blocked: (1) oscillating up/down on ladder, (2) stepping off ladder sideways into air and re-grabbing, (3) moving right/falling a bit/re-grabbing. `_best_ladder_y` only resets when player actually lands on a platform (`is_player_on_platform()`), not when airborne. Falling triggers `REWARD_FALL_PENALTY` before reset, so re-climbing is net-negative.
+
+### 62. Two-Phase Epsilon Decay
+- **Files:** `config.py`, `trainer.py`
+- **Change:** Replaced single linear epsilon decay with two phases. Phase 1: `EPSILON_START` (1.0) → `EPSILON_MID` (0.05) over `EPSILON_DECAY_STEPS_1` (300K). Phase 2: `EPSILON_MID` (0.05) → `EPSILON_MIN` (0.01) over `EPSILON_DECAY_STEPS_2` (300K). Gives a longer fine-tuning tail at low exploration. Old constants `EPSILON_DECAY_STEPS` replaced by `EPSILON_DECAY_STEPS_1`/`EPSILON_DECAY_STEPS_2` + `EPSILON_MID`.
