@@ -6,7 +6,8 @@
 | **B** | Grab frame / toward / away ladder | +0.15 / +0.15 / −0.2 | Navigate to + grab ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
-| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / −50 | Terminal + immediate edge penalty |
+| **F** | Death / Barrel hit / Win | −50 / −10 / +50 | Terminal overrides |
+| **F2** | Pass platform edge | −50 | Immediate bad-move penalty |
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
@@ -64,7 +65,7 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 |-----------|--------|------------------|
 | Stepped past the left/right edge of the previous platform | `−50.0` | `REWARD_FALL_PENALTY` |
 
-**Note:** Triggered immediately when the player was grounded on a platform in the previous step, is no longer on a platform or ladder, and their center passes beyond that platform's left/right edge. This is intentionally closer to the bad action than a delayed landing penalty.
+**Note:** Triggered immediately when the player was grounded on a platform in the previous step and their center passes beyond that platform's left/right edge. No fall or landing check is required.
 
 ### H. Ladder Exit (higher platform)
 | Condition | Reward | Config Constant |

@@ -691,7 +691,7 @@ class Environment:
             prev_state_dict['in_air'] == 0 and
             prev_state_dict['height_from_platform'] == 0
         )
-        if was_grounded_on_platform and not self.player.on_ladder and not self.is_player_on_platform():
+        if was_grounded_on_platform:
             prev_platform_left = prev_state_dict['player_x'] + prev_state_dict['platform_left_dx']
             prev_platform_right = prev_state_dict['player_x'] + prev_state_dict['platform_right_dx']
             player_centerx = self.player.rect.centerx
