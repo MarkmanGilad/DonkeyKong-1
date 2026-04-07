@@ -378,3 +378,7 @@
 ### 60. Zero Out Platform Number in State Tensor
 - **Files:** `environment.py`
 - **Change:** `state_tensor[0]` (player_platform) now forced to 0 instead of normalized platform number. Agent couldn't generalize "go toward ladder" across platforms because each platform produced a different input vector. With index 0 zeroed, behavior learned on platform 1 transfers to all platforms. Dictionary still tracks `player_platform` internally for reward logic (`current_platform_number`).
+
+### 61. Fix Ladder Climb Reward Exploit — Best-Y Tracking
+- **Files:** `environment.py`
+- **Change:** Section A climb reward replaced `diff_y` with `_best_ladder_y` tracking. Only rewards **new upward progress** — each height on the ladder can only be rewarded once. Exploits blocked: (1) oscillating up/down on ladder, (2) stepping off ladder sideways into air and re-grabbing, (3) moving right/falling a bit/re-grabbing. `_best_ladder_y` only resets when player actually lands on a platform (`is_player_on_platform()`), not when airborne. Falling triggers `REWARD_FALL_PENALTY` before reset, so re-climbing is net-negative.

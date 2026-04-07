@@ -2,7 +2,7 @@
 
 | Section | What | Value | Purpose |
 |---------|------|-------|---------|
-| **A** | Climb up (on ladder) | `+Δy × 0.25` | Encourage upward progress |
+| **A** | Climb up (new progress only) | `+Δy × 0.25` | Encourage upward progress (best-y tracked) |
 | **B** | Toward/away ladder | +0.15 / −0.2 | Navigate to ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
@@ -14,13 +14,13 @@ All rewards are calculated in `environment.step()` after the action is executed.
 
 ## Reward Components
 
-### A. Climb Reward (on ladder only)
+### A. Climb Reward (on ladder only — best-y tracking)
 | Condition | Reward | Config Constant |
-|-----------|--------|-----------------|
-| Moved upward while `on_ladder` | `+Δy × 0.25` | `REWARD_CLIMB_UP_MULTIPLIER` |
-| Moved downward or not on ladder | 0 | — |
+|-----------|--------|------------------|
+| New upward progress (y < `_best_ladder_y`) | `+(best_y − y) × 0.25` | `REWARD_CLIMB_UP_MULTIPLIER` |
+| Re-climbing same height or going down | 0 | — |
 
-**Note:** Only fires when `self.player.on_ladder` is true, preventing jump-farming exploits.
+**Anti-exploit:** `_best_ladder_y` tracks highest point per climb. Only resets when player lands on a platform (`is_player_on_platform()`). Stepping off into air and re-grabbing does NOT reset tracking. Prevents: oscillating up/down, step-off-regrab, and lateral-fall-regrab exploits.
 
 ### B. Distance to Ladder (off-ladder)
 | Condition | Reward | Config Constant |
