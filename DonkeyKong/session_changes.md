@@ -398,3 +398,7 @@
 ### 65. Random Left/Right Spawn on Platform 0
 - **Files:** `trainer.py`, `config.py`
 - **Change:** Each training episode now randomly spawns the player on the left (x=380) or right (x=1420) side of platform 0 with 50/50 probability. Ladder on platform 0 is at x=500, so left-side spawns go right, right-side spawns go left — equal training for both directions. New constant: `PLAYER_SPAWN_X_LEFT = 380`.
+
+### 66. Fix Fall Penalty — Use Total Fall Distance
+- **Files:** `environment.py`
+- **Change:** F2 fall penalty was using `prev_y` (one frame's delta, ~3-5px) instead of total fall distance. Agent exploited this: climb +30, fall penalty only -1.5 = net +28 per cycle. Fix: track `_last_grounded_y` (updated when on platform or ladder). F2 now uses `player.rect.y - _last_grounded_y` for the full fall distance. A 140px fall now costs -42, making the climb-fall cycle net-negative (-10).

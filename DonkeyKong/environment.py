@@ -21,6 +21,7 @@ class Environment:
         self.game_over = False
         self.highest_platform = 0
         self.total_platforms_reached = 0
+        self._last_grounded_y = screen_height  # Track y when last on a platform
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -523,6 +524,10 @@ class Environment:
         prev_on_ladder = self.player.on_ladder
         prev_platform = self.player.current_platform_number
 
+        # Track last grounded y for fall penalty
+        if self.is_player_on_platform() or self.player.on_ladder:
+            self._last_grounded_y = self.player.rect.y
+
         # Track platform progress
         current_plat = self.player.current_platform_number
         if current_plat > self.highest_platform:
@@ -683,10 +688,10 @@ class Environment:
             reward = config.REWARD_WIN
 
         # F2. Per-pixel penalty for falling to a lower platform
-        # Same cost per pixel as climbing down, so stepping off ladder sideways = same penalty
+        # Uses _last_grounded_y to capture TOTAL fall distance, not just one frame
         current_plat = self.player.current_platform_number
         if current_plat >= 0 and prev_platform >= 0 and current_plat < prev_platform:
-            fall_pixels = self.player.rect.y - prev_y  # positive = fell down
+            fall_pixels = self.player.rect.y - self._last_grounded_y  # total fall from last grounded position
             if fall_pixels > 0:
                 reward -= fall_pixels * config.REWARD_CLIMB_DOWN_MULTIPLIER
 
