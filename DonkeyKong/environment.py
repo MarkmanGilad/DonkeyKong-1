@@ -22,6 +22,7 @@ class Environment:
         self.highest_platform = 0
         self.total_platforms_reached = 0
         self._last_grounded_platform = -1
+        self._edge_penalty_given = False
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -689,15 +690,17 @@ class Environment:
             reward = config.REWARD_WIN
             terminal_event = True
 
-        # F2. Penalty for being outside the last grounded platform's edges
+        # F2. One-time penalty for moving outside the last grounded platform's edges
         if not terminal_event:
             if self.is_player_on_platform():
                 self._last_grounded_platform = self.player.current_platform_number
-            if self._last_grounded_platform >= 0 and not self.player.on_ladder:
+                self._edge_penalty_given = False
+            if not self._edge_penalty_given and self._last_grounded_platform >= 0 and not self.player.on_ladder:
                 for p in self.platforms:
                     if p.platform_number == self._last_grounded_platform:
                         if self.player.rect.centerx < p.rect.left or self.player.rect.centerx > p.rect.right:
                             reward -= config.REWARD_FALL_PENALTY
+                            self._edge_penalty_given = True
                         break
 
         # H. Reward for reaching a HIGHER platform via ladder

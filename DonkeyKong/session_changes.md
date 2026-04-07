@@ -418,3 +418,11 @@
 ### 70. Simplify F2 to Per-Frame Last-Grounded-Platform Edge Check
 - **Files:** `environment.py`, `reward_reference.md`
 - **Change:** Replaced one-frame edge detection with a persistent `_last_grounded_platform` tracker. F2 now looks up that platform's edges every frame: if the player's center x is outside them and the player is not on a ladder, the penalty fires (`-= REWARD_FALL_PENALTY`). The tracker only updates when the player is actually standing on a platform. Also added a `terminal_event` flag so F2 is skipped when F already overrides the reward (death/barrel/win), preventing double-penalty on death and subtracting from win reward.
+
+### 71. Make F2 Edge Penalty Fire Once Per Airborne Trip
+- **Files:** `environment.py`, `reward_reference.md`
+- **Change:** F2 was firing `-50` every frame the player was outside the platform edges, causing reward totals of -750+ for a single fall and Q-value explosions. Added `_edge_penalty_given` flag: penalty fires once when the player crosses the edge, resets when landing on a platform.
+
+### 72. Add Gradient Clipping
+- **Files:** `AI_agent.py`
+- **Change:** Added `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` after `loss.backward()` to prevent large TD errors from destabilizing the network weights. Standard DQN practice.
