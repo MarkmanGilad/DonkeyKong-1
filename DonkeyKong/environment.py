@@ -21,6 +21,7 @@ class Environment:
         self.game_over = False
         self.highest_platform = 0
         self.total_platforms_reached = 0
+        self._last_grounded_platform = -1
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -676,27 +677,28 @@ class Environment:
             reward -= config.REWARD_JUMP_IRRELEVANT
 
         # F. Survival / Winning / Losing
+        terminal_event = False
         if self.lives < prev_lives:
             reward = config.REWARD_DEATH
+            terminal_event = True
         elif self.barrel_hits > prev_barrel_hits:
             reward = config.REWARD_BARREL_HIT
+            terminal_event = True
 
         if self.score > prev_score:
             reward = config.REWARD_WIN
+            terminal_event = True
 
-        # F2. Immediate penalty for stepping past a platform edge
-        was_grounded_on_platform = (
-            prev_state_dict['player_platform'] >= 0 and
-            prev_state_dict['on_ladder'] == 0 and
-            prev_state_dict['in_air'] == 0 and
-            prev_state_dict['height_from_platform'] == 0
-        )
-        if was_grounded_on_platform:
-            prev_platform_left = prev_state_dict['player_x'] + prev_state_dict['platform_left_dx']
-            prev_platform_right = prev_state_dict['player_x'] + prev_state_dict['platform_right_dx']
-            player_centerx = self.player.rect.centerx
-            if player_centerx < prev_platform_left or player_centerx > prev_platform_right:
-                reward -= config.REWARD_FALL_PENALTY
+        # F2. Penalty for being outside the last grounded platform's edges
+        if not terminal_event:
+            if self.is_player_on_platform():
+                self._last_grounded_platform = self.player.current_platform_number
+            if self._last_grounded_platform >= 0 and not self.player.on_ladder:
+                for p in self.platforms:
+                    if p.platform_number == self._last_grounded_platform:
+                        if self.player.rect.centerx < p.rect.left or self.player.rect.centerx > p.rect.right:
+                            reward -= config.REWARD_FALL_PENALTY
+                        break
 
         # H. Reward for reaching a HIGHER platform via ladder
         if not self.player.on_ladder and prev_on_ladder:

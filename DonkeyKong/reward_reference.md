@@ -7,7 +7,7 @@
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
 | **F** | Death / Barrel hit / Win | −50 / −10 / +50 | Terminal overrides |
-| **F2** | Pass platform edge | −50 | Immediate bad-move penalty |
+| **F2** | Outside last platform edges (per frame) | −50 | Penalize leaving platform bounds |
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
@@ -60,12 +60,12 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 
 **Note:** Death and barrel hit use `reward =` (not `+=`), replacing accumulated A–D rewards. Life lost checks first (highest priority). `INITIAL_LIVES = 1` (fall = instant game over). Barrel hits: player continues from same position, gets −10 reward, −10 score (`BARREL_HIT_SCORE_PENALTY`). Game over after `MAX_BARREL_HITS = 10` hits.
 
-### F2. Edge Exit Penalty (immediate, additive after F)
+### F2. Edge Exit Penalty (per-frame, skipped on terminal events)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| Stepped past the left/right edge of the previous platform | `−50.0` | `REWARD_FALL_PENALTY` |
+| Player center outside last grounded platform's edges (per frame) | `−50.0` | `REWARD_FALL_PENALTY` |
 
-**Note:** Triggered immediately when the player was grounded on a platform in the previous step and their center passes beyond that platform's left/right edge. No fall or landing check is required.
+**Note:** Tracks the last platform the player actually stood on (`_last_grounded_platform`). Every frame, if the player is not on a ladder and their center x is outside that platform's left/right edges, the penalty fires. Skipped when a terminal event (death, barrel hit, win) has already overridden the reward. Fires per frame while outside, so consider lowering the value (e.g. 5–10) since long falls accumulate more penalty than short ones.
 
 ### H. Ladder Exit (higher platform)
 | Condition | Reward | Config Constant |
@@ -78,10 +78,10 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 
 1. Start with `reward = 0`
 2. Add A (climb on ladder) + B (toward/away ladder) + C (toward/away princess) + D (jump)
-3. If death → `reward = −50.0` (replaces all above)
-4. Elif barrel hit → `reward = −10.0` (replaces all above)
-5. If win → `reward = +50.0` (replaces all above)
-6. If the player steps past a platform edge → `reward -= 50.0` immediately (stacks on top of F)
+3. If death → `reward = −50.0` (replaces all above, sets terminal_event)
+4. Elif barrel hit → `reward = −10.0` (replaces all above, sets terminal_event)
+5. If win → `reward = +50.0` (replaces all above, sets terminal_event)
+6. If no terminal event: per frame outside last grounded platform's edges → `reward -= 50.0` (skipped on ladder)
 7. Add H (ladder exit) — always additive
 
 ## Removed Sections (historical)

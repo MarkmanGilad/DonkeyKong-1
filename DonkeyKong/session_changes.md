@@ -414,3 +414,7 @@
 ### 69. Replace Landing Fall Penalty With Immediate Edge Penalty
 - **Files:** `environment.py`, `reward_reference.md`
 - **Change:** Removed the old fall-tracking logic based on previous grounded platform/y and deleted the delayed landing penalty. F2 now uses only platform edges: if the player was grounded on a platform in the previous step and then leaves that platform from the left or right edge while not on a ladder, the agent gets an immediate `-50` penalty. This moves the punishment closer to the bad action and simplifies the reward logic.
+
+### 70. Simplify F2 to Per-Frame Last-Grounded-Platform Edge Check
+- **Files:** `environment.py`, `reward_reference.md`
+- **Change:** Replaced one-frame edge detection with a persistent `_last_grounded_platform` tracker. F2 now looks up that platform's edges every frame: if the player's center x is outside them and the player is not on a ladder, the penalty fires (`-= REWARD_FALL_PENALTY`). The tracker only updates when the player is actually standing on a platform. Also added a `terminal_event` flag so F2 is skipped when F already overrides the reward (death/barrel/win), preventing double-penalty on death and subtracting from win reward.
