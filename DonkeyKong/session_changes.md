@@ -390,3 +390,7 @@
 ### 63. Zero Out player_x in State Tensor
 - **Files:** `environment.py`
 - **Change:** `state_tensor[1]` (player_x) now forced to 0. Absolute x position is fully redundant — `platform_left_dx`, `platform_right_dx`, `ladder_dx`, `barrel_dx`, `princess_dx` already encode all relative spatial info. Makes the state fully egocentric: identical situations produce identical inputs regardless of absolute screen position.
+
+### 64. Asymmetric Climb Reward + Per-Pixel Fall Penalty
+- **Files:** `environment.py`, `config.py`
+- **Change:** Replaced best-y tracking with simple asymmetric `diff_y`: up = `+Δy × 0.25`, down = `Δy × 0.3`. Oscillating nets negative (−0.05/px/cycle). F2 fall penalty changed from flat −50 to per-pixel: `−fall_pixels × 0.3` (same rate as climbing down). Stepping off ladder sideways now costs the same as climbing down the same distance. New constant: `REWARD_CLIMB_DOWN_MULTIPLIER = 0.3`. Removed unused `_best_ladder_y` tracking.

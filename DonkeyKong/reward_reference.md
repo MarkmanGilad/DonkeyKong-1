@@ -2,11 +2,11 @@
 
 | Section | What | Value | Purpose |
 |---------|------|-------|---------|
-| **A** | Climb up (new progress only) | `+Δy × 0.25` | Encourage upward progress (best-y tracked) |
+| **A** | Climb up / down (on ladder) | `+Δy × 0.25` / `Δy × 0.3` | Asymmetric: down costs more than up gains |
 | **B** | Toward/away ladder | +0.15 / −0.2 | Navigate to ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
 | **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
-| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / −50 | Terminal + anti-exploit |
+| **F** | Death / Barrel hit / Win / Fall | −50 / −10 / +50 / per-px | Terminal + per-pixel fall penalty |
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
@@ -14,13 +14,13 @@ All rewards are calculated in `environment.step()` after the action is executed.
 
 ## Reward Components
 
-### A. Climb Reward (on ladder only — best-y tracking)
+### A. Climb Reward / Penalty (on ladder only)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| New upward progress (y < `_best_ladder_y`) | `+(best_y − y) × 0.25` | `REWARD_CLIMB_UP_MULTIPLIER` |
-| Re-climbing same height or going down | 0 | — |
+| Moved upward on ladder | `+Δy × 0.25` | `REWARD_CLIMB_UP_MULTIPLIER` |
+| Moved downward on ladder | `Δy × 0.3` (negative) | `REWARD_CLIMB_DOWN_MULTIPLIER` |
 
-**Anti-exploit:** `_best_ladder_y` tracks highest point per climb. Only resets when player lands on a platform (`is_player_on_platform()`). Stepping off into air and re-grabbing does NOT reset tracking. Prevents: oscillating up/down, step-off-regrab, and lateral-fall-regrab exploits.
+**Anti-exploit:** Down penalty (0.3) > up reward (0.25), so oscillating up/down nets negative. Stepping off ladder and falling uses the same per-pixel penalty in F2, so the exploit of falling off sideways to avoid the down-climb penalty is closed.
 
 ### B. Distance to Ladder (off-ladder)
 | Condition | Reward | Config Constant |
@@ -58,12 +58,12 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 
 **Note:** Death and barrel hit use `reward =` (not `+=`), replacing accumulated A–D rewards. Life lost checks first (highest priority). `INITIAL_LIVES = 1` (fall = instant game over). Barrel hits: player continues from same position, gets −10 reward, −10 score (`BARREL_HIT_SCORE_PENALTY`). Game over after `MAX_BARREL_HITS = 10` hits.
 
-### F2. Fall Penalty (additive after F)
+### F2. Fall Penalty — Per-Pixel (additive after F)
 | Condition | Reward | Config Constant |
 |-----------|--------|------------------|
-| Landed on a lower platform than before | −50.0 | `REWARD_FALL_PENALTY` |
+| Fell to a lower platform | `−fall_pixels × 0.3` | `REWARD_CLIMB_DOWN_MULTIPLIER` |
 
-**Note:** Prevents climb-fall-reclimb cycling exploit. Same magnitude as death. Applied with `−=` so it stacks with death if both happen.
+**Note:** Uses the same per-pixel multiplier as climbing down. Stepping off a ladder sideways and falling 120px costs the same as climbing down 120px (−36). Replaces old flat `REWARD_FALL_PENALTY` (−50).
 
 ### H. Ladder Exit (higher platform)
 | Condition | Reward | Config Constant |

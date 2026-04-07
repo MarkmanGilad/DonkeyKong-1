@@ -21,7 +21,6 @@ class Environment:
         self.game_over = False
         self.highest_platform = 0
         self.total_platforms_reached = 0
-        self._best_ladder_y = screen_height  # Track best (highest) y on current ladder climb
         self.barrel_timer = 0
         self.barrel_interval = 10  # Randomize next barrel interval
         self.barrel_count = 0
@@ -637,19 +636,13 @@ class Environment:
         # --- REWARD CALCULATION (IMPROVED) ---
         reward = 0
 
-        # A. Reward for climbing UP on a ladder (only NEW upward progress)
-        # _best_ladder_y tracks the highest point reached on the current ladder.
-        # Only resets when player lands on a platform, not when briefly airborne.
+        # A. Reward for climbing UP / Penalty for climbing DOWN on a ladder
+        diff_y = prev_y - self.player.rect.y  # positive = moved up
         if self.player.on_ladder:
-            if not prev_on_ladder:
-                # Just grabbed ladder — keep the best of old tracking vs current position
-                self._best_ladder_y = min(getattr(self, '_best_ladder_y', self.player.rect.y), self.player.rect.y)
-            if self.player.rect.y < self._best_ladder_y:
-                reward += (self._best_ladder_y - self.player.rect.y) * config.REWARD_CLIMB_UP_MULTIPLIER
-                self._best_ladder_y = self.player.rect.y
-        elif self.is_player_on_platform() and not prev_on_ladder:
-            # Only reset when grounded on a platform (not floating in air)
-            self._best_ladder_y = self.player.rect.y
+            if diff_y > 0:
+                reward += diff_y * config.REWARD_CLIMB_UP_MULTIPLIER
+            elif diff_y < 0:
+                reward += diff_y * config.REWARD_CLIMB_DOWN_MULTIPLIER  # diff_y is negative, so this subtracts
 
         # B. Distance Shaping: Reward getting closer to LADDER
         if not self.player.on_ladder:
@@ -689,10 +682,13 @@ class Environment:
         if self.score > prev_score:
             reward = config.REWARD_WIN
 
-        # F2. Big penalty for falling to a lower platform
+        # F2. Per-pixel penalty for falling to a lower platform
+        # Same cost per pixel as climbing down, so stepping off ladder sideways = same penalty
         current_plat = self.player.current_platform_number
         if current_plat >= 0 and prev_platform >= 0 and current_plat < prev_platform:
-            reward -= config.REWARD_FALL_PENALTY
+            fall_pixels = self.player.rect.y - prev_y  # positive = fell down
+            if fall_pixels > 0:
+                reward -= fall_pixels * config.REWARD_CLIMB_DOWN_MULTIPLIER
 
         # H. Reward for reaching a HIGHER platform via ladder
         if not self.player.on_ladder and prev_on_ladder:
