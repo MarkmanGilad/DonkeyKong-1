@@ -1,6 +1,7 @@
 import pygame
 import torch
 import os
+import random
 import wandb
 
 from environment import Environment
@@ -10,7 +11,7 @@ from config import *
 
 
 def main():
-    num = 100
+    num = 101
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -81,13 +82,16 @@ def main():
         }
     )
 
-    player_x = SCREEN_WIDTH - PLAYER_SPAWN_X_OFFSET
+    player_x_right = SCREEN_WIDTH - PLAYER_SPAWN_X_OFFSET
+    player_x_left = PLAYER_SPAWN_X_LEFT
     player_y = SCREEN_HEIGHT - PLAYER_SPAWN_Y_OFFSET
-    character = Character(player_x, player_y)
+    character = Character(player_x_right, player_y)
 
     for episode in range(EPISODES):
 
         env = Environment(SCREEN_WIDTH, SCREEN_HEIGHT)
+        # Randomly spawn on left or right side of platform 0
+        player_x = player_x_left if random.random() < 0.5 else player_x_right
         character.reset(player_x, player_y)
         env.add_player(character)
 

@@ -394,3 +394,7 @@
 ### 64. Asymmetric Climb Reward + Per-Pixel Fall Penalty
 - **Files:** `environment.py`, `config.py`
 - **Change:** Replaced best-y tracking with simple asymmetric `diff_y`: up = `+Δy × 0.25`, down = `Δy × 0.3`. Oscillating nets negative (−0.05/px/cycle). F2 fall penalty changed from flat −50 to per-pixel: `−fall_pixels × 0.3` (same rate as climbing down). Stepping off ladder sideways now costs the same as climbing down the same distance. New constant: `REWARD_CLIMB_DOWN_MULTIPLIER = 0.3`. Removed unused `_best_ladder_y` tracking.
+
+### 65. Random Left/Right Spawn on Platform 0
+- **Files:** `trainer.py`, `config.py`
+- **Change:** Each training episode now randomly spawns the player on the left (x=380) or right (x=1420) side of platform 0 with 50/50 probability. Ladder on platform 0 is at x=500, so left-side spawns go right, right-side spawns go left — equal training for both directions. New constant: `PLAYER_SPAWN_X_LEFT = 380`.

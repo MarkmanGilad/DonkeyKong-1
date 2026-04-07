@@ -6,7 +6,8 @@ SCREEN_HEIGHT = 820
 PLAYER_SPEED = 3
 PLAYER_CLIMB_SPEED = 3
 PLAYER_JUMP_POWER = 6
-PLAYER_SPAWN_X_OFFSET = 80  # spawns at SCREEN_WIDTH - this value
+PLAYER_SPAWN_X_OFFSET = 80  # spawns at SCREEN_WIDTH - this value (right side)
+PLAYER_SPAWN_X_LEFT = 380   # left side spawn x position
 PLAYER_SPAWN_Y_OFFSET = 60  # spawns at SCREEN_HEIGHT - this value
 
 # === PHYSICS ===
