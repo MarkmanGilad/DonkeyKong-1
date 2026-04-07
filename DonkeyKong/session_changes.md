@@ -374,3 +374,7 @@
 ### 59. Fix Ladder Climb Reward Exploit
 - **Files:** `environment.py`
 - **Change:** Section A climb reward was one-sided — only rewarded going up, no penalty for going down. Agent farmed reward by cycling up/down on ladder. Fix: apply `diff_y * REWARD_CLIMB_UP_MULTIPLIER` symmetrically so going down penalizes equally. Net reward for up+down = 0.
+
+### 60. Zero Out Platform Number in State Tensor
+- **Files:** `environment.py`
+- **Change:** `state_tensor[0]` (player_platform) now forced to 0 instead of normalized platform number. Agent couldn't generalize "go toward ladder" across platforms because each platform produced a different input vector. With index 0 zeroed, behavior learned on platform 1 transfers to all platforms. Dictionary still tracks `player_platform` internally for reward logic (`current_platform_number`).
