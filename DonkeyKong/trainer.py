@@ -11,7 +11,7 @@ from config import *
 
 
 def main():
-    num = 113
+    num = 121
     pygame.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))

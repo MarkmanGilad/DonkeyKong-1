@@ -5,13 +5,14 @@
 | **A** | Climb up / down (on ladder) | `+Δy × 0.25` / `Δy × 0.3` | Asymmetric: down costs more than up gains |
 | **B** | Grab frame / toward / away ladder | +0.15 / +0.15 / −0.2 | Navigate to + grab ladders |
 | **C** | Toward/away princess (same plat) | +0.15 / −0.2 | Walk to princess on top |
-| **D** | Jump: barrel ≤40px / else | +3.0 / −0.5 | Binary dodge decision |
-| **F** | Death / Barrel hit / Win | −50 / −10 / +50 | Terminal overrides |
+| **D** | Jump: barrel ≤40px / else | +10.0 / −0.5 | Binary dodge decision |
+| **D2** | Barrel ≤40px, on ground, per frame | −0.5/frame | Continuous pressure to jump |
+| **F** | Death / Barrel hit / Win | −50 / −25 / +50 | Terminal overrides |
 | **F2** | Outside last platform edges (once) | −50 | One-time edge-exit penalty |
 | **H** | Exit ladder to higher plat | +2.0 | Milestone bonus |
 
 All rewards are calculated in `environment.step()` after the action is executed.
-6 active sections: A, B, C, D, F (with F2), H.
+7 active sections: A, B, C, D, D2, F (with F2), H.
 
 ## Reward Components
 
@@ -43,7 +44,7 @@ All rewards are calculated in `environment.step()` after the action is executed.
 ### D. Jump Reward / Penalty (binary)
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
-| Jump when barrel ≤ 40 px | +3.0 | `REWARD_JUMP_CLOSE` |
+| Jump when barrel ≤ 40 px | +10.0 | `REWARD_JUMP_CLOSE` |
 | Jump when barrel > 40 px | −0.5 | `REWARD_JUMP_IRRELEVANT` |
 | Jump with no barrel (`barrel_dx == 0`) | −0.5 | `REWARD_JUMP_IRRELEVANT` |
 
@@ -51,14 +52,23 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 
 **Note:** `barrel_dx` is platform-aware. Off-ladder: only barrels on the same platform facing the player. On-ladder: only barrels on the platform above heading toward the ladder top.
 
+### D2. Barrel Danger Zone Penalty (per-frame)
+| Condition | Reward | Config Constant |
+|-----------|--------|------------------|
+| Barrel ≤ 40px AND on ground AND not on ladder | −0.5/frame | `REWARD_BARREL_DANGER_PER_FRAME` |
+
+Threshold: same `REWARD_JUMP_CLOSE_THRESHOLD = 40`
+
+**Note:** Fires every frame the player is standing on the ground with a threatening barrel within 40px. Stops when the player jumps (`in_air == 1`) or the barrel moves past 40px. Over ~20 frames in the danger zone, accumulates ~−10.0. A well-timed jump earns +10.0 from D and stops D2, netting positive. Walking away also stops D2 (barrel exits threshold) — valid retreats are not penalized.
+
 ### F. Terminal Events (override reward with `=`)
 | Condition | Reward | Config Constant |
 |-----------|--------|-----------------|
 | Life lost (game over) | −50.0 | `REWARD_DEATH` |
-| Barrel hit (survives) | −10.0 | `REWARD_BARREL_HIT` |
+| Barrel hit (survives) | −25.0 | `REWARD_BARREL_HIT` |
 | Score increased (reached new platform) | +50.0 | `REWARD_WIN` |
 
-**Note:** Death and barrel hit use `reward =` (not `+=`), replacing accumulated A–D rewards. Life lost checks first (highest priority). `INITIAL_LIVES = 1` (fall = instant game over). Barrel hits: player continues from same position, gets −10 reward, −10 score (`BARREL_HIT_SCORE_PENALTY`). Game over after `MAX_BARREL_HITS = 10` hits.
+**Note:** Death and barrel hit use `reward =` (not `+=`), replacing accumulated A–D/D2 rewards. Life lost checks first (highest priority). `INITIAL_LIVES = 1` (fall = instant game over). Barrel hits: player continues from same position, gets −25 reward, −10 score (`BARREL_HIT_SCORE_PENALTY`). Game over after `MAX_BARREL_HITS = 10` hits.
 
 ### F2. Edge Exit Penalty (one-time, skipped on terminal events)
 | Condition | Reward | Config Constant |
@@ -77,15 +87,14 @@ Threshold: `REWARD_JUMP_CLOSE_THRESHOLD = 40`
 ## Reward Flow
 
 1. Start with `reward = 0`
-2. Add A (climb on ladder) + B (toward/away ladder) + C (toward/away princess) + D (jump)
+2. Add A (climb on ladder) + B (toward/away ladder) + C (toward/away princess) + D (jump) + D2 (barrel danger)
 3. If death → `reward = −50.0` (replaces all above, sets terminal_event)
-4. Elif barrel hit → `reward = −10.0` (replaces all above, sets terminal_event)
+4. Elif barrel hit → `reward = −25.0` (replaces all above, sets terminal_event)
 5. If win → `reward = +50.0` (replaces all above, sets terminal_event)
 6. If no terminal event and player crosses last grounded platform edge (once) → `reward -= 50.0` (skipped on ladder)
 7. Add H (ladder exit) — always additive
 
 ## Removed Sections (historical)
-- **D2 (No-jump penalty)**: Punished valid walk-away dodges; death penalty already handles failed dodges
 - **D middle tier (41–70px)**: Merged into single penalty; binary close/far is cleaner
 - **Grab ladder (+1)**: Old flat +1 bonus removed; replaced by B grab frame (+0.15) which is consistent with the approach shaping
 - **E (Idle)**: Redundant with directional shaping (B/C)

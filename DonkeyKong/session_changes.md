@@ -434,3 +434,10 @@
 ### 74. Barrels Persist After Reaching Princess
 - **Files:** `environment.py`
 - **Change:** Removed the barrel kill loop from the princess collision handler. Barrels now continue rolling when the player wins and respawns at the bottom, making each subsequent run progressively harder as more barrels accumulate on screen.
+
+### 75. D2 Per-Frame Barrel Danger Penalty (Bug Fix)
+- **Files:** `config.py`, `environment.py`
+- **Problem:** Section D only fired on the single frame a jump started (`jump_happened`). When a barrel was within 40px and the agent didn't jump, it got **zero penalty** for ~20 frames until the barrel hit (−25). The sparse signal was too delayed for the DQN to learn "I should have jumped 20 frames ago." This was the original D2 from #22, removed in #46 because it penalized walk-away dodges. But without it, the agent never learned to jump over barrels.
+- **Fix:** Re-added D2 with tighter conditions. Every frame where: `barrel_dx != 0` AND `in_air == 0` AND `on_ladder == 0` AND `|barrel_dx| <= 40px`, the agent gets `−0.5`. New constant: `REWARD_BARREL_DANGER_PER_FRAME = 0.5`.
+- **Math:** ~20 frames in danger zone × −0.5 = −10.0 accumulated. Jump at right moment: +10.0 (D) and D2 stops (in_air=1). Net for good jump: ~+5 to +8. Net for no jump: −10 shaping + −25 hit = −35.
+- **Walk-away concern:** If player walks away from barrel, barrel_dx increases past 40px and D2 stops. Walk-away dodges are not penalized (unlike the original #22 which used a wider threshold).

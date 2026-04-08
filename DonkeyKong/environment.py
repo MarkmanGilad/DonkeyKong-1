@@ -675,6 +675,12 @@ class Environment:
         elif jump_happened and prev_state_dict['barrel_dx'] == 0:
             reward -= config.REWARD_JUMP_IRRELEVANT
 
+        # D2. Per-frame penalty: barrel within threshold and player on ground (not jumping/airborne)
+        if prev_state_dict['barrel_dx'] != 0 and prev_state_dict['in_air'] == 0 and not prev_state_dict['on_ladder']:
+            barrel_distance = abs(prev_state_dict['barrel_dx'])
+            if barrel_distance <= config.REWARD_JUMP_CLOSE_THRESHOLD:
+                reward -= config.REWARD_BARREL_DANGER_PER_FRAME
+
         # F. Survival / Winning / Losing
         terminal_event = False
         if self.lives < prev_lives:
